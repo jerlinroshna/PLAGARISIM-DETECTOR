@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Historical Code Repository{% endblock %}
+{% block page_title %}Historical Code Repository (Past Academic Years){% endblock %}
+
+{% block content %}
+<!-- Top Stats & Information Banner -->
+<div class="page-banner">
+  <div>
+    <div class="banner-title">Archived Student Submissions Database</div>
+    <div class="banner-desc">
+      Manage benchmark code submissions from previous academic years used for historical plagiarism comparison.
+    </div>
+  </div>
+  <div>
+    <span class="badge badge-status" style="font-size: 0.85rem; padding: 6px 14px;">
+      Total Archived Records: <strong>{{ records|length }}</strong>
+    </span>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start;">
+  <!-- Left Column: Search, Filter & Records Table -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Historical Records Catalog</h2>
+    </div>
+
+    <!-- Filters -->
+    <form method="GET" action="{{ url_for('faculty.historical_repo') }}" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+      <div style="flex: 1; min-width: 140px;">
+        <select class="form-control" name="year">
+          <option value="">All Academic Years</option>
+          {% for y in years %}
+            <option value="{{ y.academic_year }}" {% if filter_year == y.academic_year %}selected{% endif %}>{{ y.academic_year }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="flex: 1; min-width: 130px;">
+        <select class="form-control" name="language">
+          <option value="">All Languages</option>
+          <option value="python" {% if filter_lang == 'python' %}selected{% endif %}>Python</option>
+          <option value="c" {% if filter_lang == 'c' %}selected{% endif %}>C</option>
+          <option value="cpp" {% if filter_lang == 'cpp' %}selected{% endif %}>C++</option>
+          <option value="java" {% if filter_lang == 'java' %}selected{% endif %}>Java</option>
+          <option value="javascript" {% if filter_lang == 'javascript' %}selected{% endif %}>JavaScript</option>
+        </select>
+      </div>
+
+      <div style="flex: 2; min-width: 160px;">
+        <input type="text" class="form-control" name="subject" value="{{ filter_subject }}" placeholder="Search subject...">
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{{ url_for('faculty.historical_repo') }}" class="btn btn-secondary">Reset</a>
+      </div>
+    </form>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Academic Year</th>
+            <th>Assignment & Subject</th>
+            <th>Language</th>
+            <th>Filename</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if records %}
+            {% for r in records %}
+            <tr>
+              <td><strong>#{{ r.id }}</strong></td>
+              <td><span class="badge badge-status">{{ r.academic_year }}</span></td>
+              <td>
+                <div style="font-weight: 600;">{{ r.assignment_name }}</div>
+                <small style="color: var(--text-muted);">{{ r.subject }}</small>
+              </td>
+              <td><code>{{ r.programming_language|upper }}</code></td>
+              <td>
+                <span style="font-family: var(--code-font); font-size: 0.8rem;">{{ r.source_filename }}</span>
+              </td>
+              <td>
+                <form action="{{ url_for('faculty.delete_historical', hist_id=r.id) }}" method="POST" 
+                      onsubmit="return confirm('Remove this historical submission from the repository?');">
+                  <button type="submit" class="btn btn-sm btn-danger-outline">
+                    Delete
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
+                No historical records match the filter criteria.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Right Column: Upload Historical Code Form -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">+ Add Historical Code</h2>
+    </div>
+
+    <form action="{{ url_for('faculty.historical_repo') }}" method="POST" enctype="multipart/form-data">
+      <div class="form-group">
+        <label class="form-label" for="academic_year">Academic Year *</label>
+        <input type="text" class="form-control" name="academic_year" id="academic_year" required 
+               placeholder="e.g. 2023-2024">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="subject">Course Subject *</label>
+        <input type="text" class="form-control" name="subject" id="subject" required 
+               placeholder="e.g. Data Structures & Algorithms">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="assignment_name">Assignment Name *</label>
+        <input type="text" class="form-control" name="assignment_name" id="assignment_name" required 
+               placeholder="e.g. CS201: Sorting Algorithms">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="programming_language">Programming Language *</label>
+        <select class="form-control" name="programming_language" id="programming_language" required>
+          <option value="auto">Auto-detect from file extension</option>
+          {% for lang_key, lang_name in languages.items() %}
+            <option value="{{ lang_key }}">{{ lang_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="batch_label">Batch / Reference Label (Optional)</label>
+        <input type="text" class="form-control" name="batch_label" id="batch_label" 
+               placeholder="e.g. AY 2023-24 Batch A Final Exam">
+      </div>
+
+      <div class="form-group upload-drop-zone">
+        <label class="form-label" for="code_file">Upload Source Code File</label>
+        <input type="file" class="form-control" name="code_file" id="code_file" accept=".py,.java,.c,.cpp,.cc,.js">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="code_text">Or Paste Historical Code</label>
+        <textarea class="form-control code-editor" name="code_text" id="code_text" rows="6" 
+                  placeholder="// Paste historical benchmark source code here..."></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+        Upload to Historical Repository
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

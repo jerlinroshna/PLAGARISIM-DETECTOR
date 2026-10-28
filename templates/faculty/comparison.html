@@ -1,0 +1,506 @@
+{% extends "base.html" %}
+
+{% block title %}Plagiarism Comparison - Submission #{{ sub.id }}{% endblock %}
+{% block page_title %}Source Code Plagiarism Analysis & Comparison{% endblock %}
+
+{% block content %}
+<!-- Back link & Top Bar -->
+<div style="margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+  <a href="{{ url_for('faculty.submissions') }}" class="btn btn-sm btn-secondary">&larr; Back to Results</a>
+  <span style="font-size: 0.82rem; color: var(--text-muted);">
+    Evaluation Timestamp: {{ result.analyzed_at or 'Recently' }}
+  </span>
+</div>
+
+<!-- Score Summary & Metadata Banner -->
+<div class="card" style="margin-bottom: 20px;">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; align-items: center;">
+    
+    <!-- Combined Score Badge Card -->
+    <div style="background-color: var(--bg-alt); padding: 18px; border-radius: 8px; border: 1px solid var(--border-light); text-align: center;">
+      <div style="font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Combined Plagiarism Score</div>
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--primary); margin: 4px 0;">
+        {{ result.combined_similarity_score or 0.0 }}%
+      </div>
+      <span class="badge {% if result.similarity_label == 'High Similarity' %}badge-high{% elif result.similarity_label == 'Medium Similarity' %}badge-medium{% else %}badge-low{% endif %}" style="font-size: 0.85rem; padding: 4px 12px;">
+        {{ result.similarity_label or 'Low Similarity' }}
+      </span>
+      <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">
+        Weighted Formulation: 40% Text + 60% AST Structure
+      </div>
+    </div>
+
+    <!-- Component Scores -->
+    <div style="background-color: var(--bg-alt); padding: 18px; border-radius: 8px; border: 1px solid var(--border-light);">
+      <div style="margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+          <span style="font-weight: 600;">Text Similarity:</span>
+          <strong>{{ result.text_similarity_score or 0.0 }}%</strong>
+        </div>
+        <div style="background-color: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+          <div style="background-color: #3b82f6; height: 100%; width: {{ result.text_similarity_score or 0 }}%;"></div>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">Normalized token sequences & winnowing</div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+          <span style="font-weight: 600;">AST Structural Similarity:</span>
+          <strong>{{ result.ast_similarity_score or 0.0 }}%</strong>
+        </div>
+        <div style="background-color: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+          <div style="background-color: #10b981; height: 100%; width: {{ result.ast_similarity_score or 0 }}%;"></div>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">Syntax tree structure & identifier normalization</div>
+      </div>
+    </div>
+
+    <!-- Submission & Historical Reference Summary -->
+    <div style="font-size: 0.88rem; line-height: 2;">
+      <div><strong>Student:</strong> {{ sub.student_name }} (<code>{{ sub.student_username }}</code>)</div>
+      <div><strong>Assignment:</strong> {{ sub.assignment_title }}</div>
+      <div><strong>Language:</strong> <code>{{ sub.programming_language|upper }}</code></div>
+      <div>
+        <strong>Matched Archive:</strong>
+        {% if result.matched_historical_id %}
+          <span style="color: var(--primary); font-weight: 600;">
+            AY {{ result.academic_year }} &bull; {{ result.hist_filename }}
+          </span>
+        {% else %}
+          <span style="color: #64748b; font-style: italic;">No comparable historical record</span>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Detailed Explanation Text -->
+  <div style="margin-top: 18px; padding: 14px 18px; background-color: #eff6ff; border-radius: 6px; border-left: 4px solid var(--accent); font-size: 0.86rem;">
+    <strong>Analysis Summary:</strong> {{ result.analysis_summary }}
+  </div>
+</div>
+
+<!-- Grok AI Plagiarism Interpretation Card -->
+<div class="card" id="grok-ai-card" style="margin-bottom: 20px; border: 1px solid #c7d2fe; background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid #e0e7ff; padding-bottom: 12px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #38bdf8; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+      </div>
+      <div>
+        <h2 class="card-title" style="margin: 0; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+          Grok AI Analysis & Interpretation
+          <span style="background: #e0e7ff; color: #3730a3; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 12px;">Official xAI Grok</span>
+        </h2>
+        <div style="font-size: 0.76rem; color: var(--text-muted);">
+          Evidence-grounded explanation of text and AST structural metrics for instructor evaluation
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button type="button" id="btn-copy-grok" class="btn btn-sm btn-secondary" style="display: {% if result.grok_explanation %}inline-flex{% else %}none{% endif %}; align-items: center; gap: 5px; font-size: 0.8rem;" title="Copy explanation to clipboard">
+        <span>&#128203;</span> <span id="copy-btn-text">Copy</span>
+      </button>
+      <button type="button" id="btn-explain-grok" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; font-weight: 600; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+        <svg id="grok-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span id="grok-btn-text">{% if result.grok_explanation %}Re-Explain with Grok AI{% else %}Explain Results with Grok AI{% endif %}</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="card-body" style="padding-top: 14px;">
+    <!-- Loading State -->
+    <div id="grok-loading" style="display: none; padding: 28px 20px; text-align: center;">
+      <div style="display: inline-block; width: 38px; height: 38px; border: 3px solid #e0e7ff; border-top-color: #2563eb; border-radius: 50%; animation: grok-spin 0.8s linear infinite; margin-bottom: 12px;"></div>
+      <div style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">Consulting xAI Grok...</div>
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Synthesizing text token overlap, AST structural nodes, and matching code sections</div>
+    </div>
+
+    <!-- Error State -->
+    <div id="grok-error" style="display: none; margin-bottom: 14px; padding: 14px 18px; background-color: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 6px; color: #991b1b; font-size: 0.86rem;">
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <span style="font-size: 1.2rem; line-height: 1;">&#9888;</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 700; margin-bottom: 3px;" id="grok-error-title">Grok AI Explanation Unavailable</div>
+          <div id="grok-error-msg">An error occurred while contacting the xAI Grok API.</div>
+          <div style="font-size: 0.78rem; color: #7f1d1d; margin-top: 6px;">
+            Note: The CodeGuard plagiarism detection engine and all other features continue working normally.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Explanation Content -->
+    <div id="grok-content" style="{% if not result.grok_explanation %}display: none;{% endif %}">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px dashed #cbd5e1; font-size: 0.78rem; color: #64748b;">
+        <span>
+          <strong>AI Model:</strong> <code id="grok-model-badge" style="background: #e2e8f0; color: #0f172a; padding: 2px 6px; border-radius: 4px;">{{ config.XAI_MODEL }}</code>
+          &bull; <span id="grok-timestamp">Generated {{ result.grok_explained_at or 'Recently' }}</span>
+        </span>
+        <span style="background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.74rem;">
+          Faculty Decision Support Only
+        </span>
+      </div>
+
+      <div id="grok-body" class="grok-markdown-render" style="font-size: 0.9rem; line-height: 1.65; color: #1e293b;">{% if result.grok_explanation %}{{ result.grok_explanation }}{% endif %}</div>
+
+      <div style="margin-top: 16px; padding: 10px 14px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.76rem; color: #64748b; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 0.9rem;">&#9432;</span>
+        <span>
+          <strong>Advisory Note:</strong> Grok AI interprets the algorithmic AST and text similarity evidence strictly as measured by CodeGuard. It does not replace independent faculty evaluation, student interviews, or official institutional judgment.
+        </span>
+      </div>
+    </div>
+
+    <!-- Initial Prompt Placeholder -->
+    <div id="grok-empty" style="{% if result.grok_explanation %}display: none;{% endif %} padding: 22px; text-align: center; background: #f8fafc; border-radius: 6px; border: 1px dashed #cbd5e1;">
+      <p style="margin: 0 0 8px 0; font-size: 0.88rem; color: #475569; font-weight: 500;">
+        Need an in-depth interpretation of these similarity scores?
+      </p>
+      <p style="margin: 0; font-size: 0.8rem; color: #64748b; max-width: 620px; margin-left: auto; margin-right: auto;">
+        Click <strong>Explain Results with Grok AI</strong> above to send the verified plagiarism metrics and code fragments to xAI Grok. Grok will explain what the scores indicate, why the code matches structurally, and key differences for instructor review.
+      </p>
+    </div>
+  </div>
+</div>
+
+
+<!-- If No Historical Match Found -->
+{% if not result.matched_historical_id %}
+  <div class="card" style="text-align: center; padding: 40px 20px;">
+    <h3 style="color: var(--text-muted); margin-bottom: 8px;">No comparable historical submissions found.</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 600px; margin: 0 auto;">
+      The repository currently does not contain previous-year submissions in <strong>{{ sub.programming_language|upper }}</strong> 
+      for assignment "<strong>{{ sub.assignment_title }}</strong>" or subject "<strong>{{ sub.subject }}</strong>".
+      To enable historical comparison, upload past academic year code into the <a href="{{ url_for('faculty.historical_repo') }}">Historical Repository</a>.
+    </p>
+  </div>
+{% else %}
+
+  <!-- Side-by-Side Code Inspection Section -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Side-by-Side Source Code Inspection</h2>
+      <div style="font-size: 0.8rem; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <span style="display: inline-flex; align-items: center; gap: 5px;">
+          <span style="width: 14px; height: 14px; background-color: #fef08a; border: 1px solid #ca8a04; display: inline-block; border-radius: 2px;"></span>
+          Highlighted Matching Code Blocks
+        </span>
+        <span style="color: var(--text-muted);">(Synchronized scrolling enabled)</span>
+      </div>
+    </div>
+
+    <div class="diff-container">
+      <!-- Left Pane: New Student Submission -->
+      <div class="code-pane">
+        <div class="pane-header">
+          <div>
+            <span>New Student Submission: </span>
+            <code style="color: #93c5fd;">{{ sub.source_filename }}</code>
+          </div>
+          <span style="font-size: 0.75rem; color: #cbd5e1;">By {{ sub.student_username }}</span>
+        </div>
+        <div class="pane-body" id="student-code-pane">
+          {% for line in student_lines %}
+            {% set line_num = loop.index %}
+            <div class="code-row {% if line_num in student_matched_lines %}matched{% endif %}">
+              <span class="line-no">{{ line_num }}</span>
+              <span class="line-text">{{ line }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Right Pane: Historical Code Match -->
+      <div class="code-pane">
+        <div class="pane-header">
+          <div>
+            <span>Historical Archive: </span>
+            <code style="color: #86efac;">{{ result.hist_filename }}</code>
+          </div>
+          <span style="font-size: 0.75rem; color: #cbd5e1;">AY {{ result.academic_year }} ({{ result.hist_batch or 'Past Batch' }})</span>
+        </div>
+        <div class="pane-body" id="hist-code-pane">
+          {% for line in hist_lines %}
+            {% set line_num = loop.index %}
+            <div class="code-row {% if line_num in historical_matched_lines %}matched{% endif %}">
+              <span class="line-no">{{ line_num }}</span>
+              <span class="line-text">{{ line }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endif %}
+
+<!-- Faculty Review Decision Form -->
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Faculty Review & Case Determination</h2>
+    <span style="font-size: 0.8rem; color: var(--text-muted);">
+      Similarity percentages are indicators for instructor review, not automatic accusations.
+    </span>
+  </div>
+
+  <form action="{{ url_for('faculty.save_review', sub_id=sub.id) }}" method="POST">
+    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start;">
+      <div class="form-group">
+        <label class="form-label" for="review_status">Review Status *</label>
+        <select class="form-control" name="review_status" id="review_status" required>
+          <option value="Pending Review" {% if review and review.review_status == 'Pending Review' %}selected{% endif %}>
+            Pending Review
+          </option>
+          <option value="Reviewed" {% if review and review.review_status == 'Reviewed' %}selected{% endif %}>
+            Reviewed (Acknowledged)
+          </option>
+          <option value="Further Investigation Required" {% if review and review.review_status == 'Further Investigation Required' %}selected{% endif %}>
+            Further Investigation Required
+          </option>
+          <option value="No Concern Identified" {% if review and review.review_status == 'No Concern Identified' %}selected{% endif %}>
+            No Concern Identified
+          </option>
+        </select>
+        <div class="form-help">Current reviewer: {{ user.full_name }}</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="review_notes">Instructor Notes & Rationale</label>
+        <textarea class="form-control" name="review_notes" id="review_notes" rows="3" 
+                  placeholder="Record observations, student interview notes, or institutional evaluation reasons...">{{ review.review_notes if review else '' }}</textarea>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+      <button type="submit" class="btn btn-primary" style="padding: 9px 24px;">
+        Save Review Decision
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+@keyframes grok-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.grok-markdown-render {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.grok-markdown-render h3, .grok-markdown-render h4 {
+  color: #0f172a;
+  margin-top: 18px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  font-size: 1.02rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.grok-markdown-render h3:first-child, .grok-markdown-render h4:first-child {
+  margin-top: 0;
+}
+.grok-markdown-render p {
+  margin-bottom: 12px;
+}
+.grok-markdown-render ul, .grok-markdown-render ol {
+  margin-left: 22px;
+  margin-bottom: 12px;
+}
+.grok-markdown-render li {
+  margin-bottom: 5px;
+}
+.grok-markdown-render code {
+  background: #f1f5f9;
+  color: #0284c7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.86em;
+}
+.grok-markdown-render pre {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 12px 0;
+  border: 1px solid #1e293b;
+}
+.grok-markdown-render pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+.grok-markdown-render strong {
+  color: #0f172a;
+}
+.grok-markdown-render blockquote {
+  border-left: 3px solid #6366f1;
+  background-color: #f5f3ff;
+  padding: 8px 14px;
+  border-radius: 0 4px 4px 0;
+  margin: 10px 0;
+  color: #4338ca;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const btnExplain = document.getElementById('btn-explain-grok');
+  const btnText = document.getElementById('grok-btn-text');
+  const btnCopy = document.getElementById('btn-copy-grok');
+  const copyText = document.getElementById('copy-btn-text');
+  const loadingEl = document.getElementById('grok-loading');
+  const errorEl = document.getElementById('grok-error');
+  const errorMsg = document.getElementById('grok-error-msg');
+  const contentEl = document.getElementById('grok-content');
+  const emptyEl = document.getElementById('grok-empty');
+  const bodyEl = document.getElementById('grok-body');
+  const modelBadge = document.getElementById('grok-model-badge');
+  const timestampEl = document.getElementById('grok-timestamp');
+
+  // Client-side markdown renderer for AI responses
+  function renderMarkdown(md) {
+    if (!md) return '';
+    let raw = md.trim();
+
+    // Escape raw HTML tags
+    let html = raw
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Fenced code blocks
+    html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, function(match, lang, code) {
+      return '<pre><code>' + code.trim() + '</code></pre>';
+    });
+
+    // Inline code
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Headings
+    html = html.replace(/^### (.*$)/gim, '<h4>$1</h4>');
+    html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^# (.*$)/gim, '<h3>$1</h3>');
+
+    // Bold & italic
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    // Blockquotes
+    html = html.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+    // List items
+    html = html.replace(/^\s*[-*]\s+(.*)$/gim, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+    html = html.replace(/<\/ul>\s*<ul>/g, '');
+
+    // Paragraph breaks
+    const blocks = html.split(/\n{2,}/);
+    html = blocks.map(b => {
+      b = b.trim();
+      if (!b) return '';
+      if (b.startsWith('<h') || b.startsWith('<pre') || b.startsWith('<ul') || b.startsWith('<blockquote')) {
+        return b;
+      }
+      return '<p>' + b.replace(/\n/g, '<br>') + '</p>';
+    }).join('');
+
+    return html;
+  }
+
+  // Initial render of pre-existing explanation if available
+  if (bodyEl && bodyEl.textContent.trim()) {
+    bodyEl.innerHTML = renderMarkdown(bodyEl.textContent.trim());
+  }
+
+  // Explain button click handler
+  if (btnExplain) {
+    btnExplain.addEventListener('click', function() {
+      const isAlreadyExplained = (contentEl.style.display !== 'none');
+
+      btnExplain.disabled = true;
+      btnExplain.style.opacity = '0.7';
+      btnText.textContent = isAlreadyExplained ? 'Regenerating explanation...' : 'Analyzing with Grok AI...';
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      if (emptyEl) emptyEl.style.display = 'none';
+
+      fetch("{{ url_for('faculty.explain_analysis', sub_id=sub.id) }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ refresh: true })
+      })
+      .then(response => {
+        return response.json().then(data => {
+          if (!response.ok) {
+            throw new Error(data.error || ('API returned status ' + response.status));
+          }
+          return data;
+        });
+      })
+      .then(data => {
+        loadingEl.style.display = 'none';
+        btnExplain.disabled = false;
+        btnExplain.style.opacity = '1';
+        btnText.textContent = 'Re-Explain with Grok AI';
+
+        if (data.success && data.explanation) {
+          bodyEl.innerHTML = renderMarkdown(data.explanation);
+          if (data.model && modelBadge) modelBadge.textContent = data.model;
+          if (timestampEl) timestampEl.textContent = 'Generated just now';
+          contentEl.style.display = 'block';
+          if (btnCopy) btnCopy.style.display = 'inline-flex';
+          if (emptyEl) emptyEl.style.display = 'none';
+        } else {
+          throw new Error(data.error || 'Failed to generate explanation.');
+        }
+      })
+      .catch(err => {
+        loadingEl.style.display = 'none';
+        btnExplain.disabled = false;
+        btnExplain.style.opacity = '1';
+        btnText.textContent = isAlreadyExplained ? 'Re-Explain with Grok AI' : 'Explain Results with Grok AI';
+
+        errorMsg.textContent = err.message || 'An unexpected error occurred while communicating with Grok AI.';
+        errorEl.style.display = 'block';
+
+        if (contentEl.style.display === 'none' && emptyEl) {
+          emptyEl.style.display = 'block';
+        }
+      });
+    });
+  }
+
+  // Copy button handler
+  if (btnCopy) {
+    btnCopy.addEventListener('click', function() {
+      const text = bodyEl.innerText || bodyEl.textContent;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        copyText.textContent = 'Copied!';
+        setTimeout(() => { copyText.textContent = 'Copy'; }, 2000);
+      }).catch(() => {
+        copyText.textContent = 'Failed';
+        setTimeout(() => { copyText.textContent = 'Copy'; }, 2000);
+      });
+    });
+  }
+})();
+</script>
+{% endblock %}
+

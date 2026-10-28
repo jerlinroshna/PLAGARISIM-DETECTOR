@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Assignments{% endblock %}
+{% block page_title %}Manage Course Assignments{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
+  <!-- Left Column: Assignments Table -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Existing Assignments</h2>
+      <span style="font-size: 0.85rem; color: var(--text-muted);">{{ assignments|length }} Total</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Assignment & Subject</th>
+            <th>Allowed Languages</th>
+            <th>Deadline</th>
+            <th>Submissions</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if assignments %}
+            {% for a in assignments %}
+            <tr>
+              <td><strong>#{{ a.id }}</strong></td>
+              <td>
+                <div style="font-weight: 600; color: var(--primary);">{{ a.title }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">{{ a.subject }}</div>
+                {% if a.description %}
+                  <div style="font-size: 0.75rem; color: #475569; margin-top: 4px;">{{ a.description }}</div>
+                {% endif %}
+              </td>
+              <td>
+                {% for lang in a.allowed_languages.split(',') %}
+                  <span class="badge badge-status" style="font-size: 0.7rem;">{{ lang|upper }}</span>
+                {% endfor %}
+              </td>
+              <td style="font-size: 0.82rem;">{{ a.deadline or 'No deadline' }}</td>
+              <td><strong>{{ a.submission_count }}</strong></td>
+              <td>
+                <span class="badge badge-status {% if a.is_active %}active{% endif %}">
+                  {{ 'Active' if a.is_active else 'Disabled' }}
+                </span>
+              </td>
+              <td>
+                <form action="{{ url_for('faculty.toggle_assignment', asgn_id=a.id) }}" method="POST" style="display: inline;">
+                  <button type="submit" class="btn btn-sm {% if a.is_active %}btn-outline{% else %}btn-primary{% endif %}">
+                    {{ 'Disable' if a.is_active else 'Enable' }}
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
+                No assignments created yet. Use the form to create your first assignment.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Right Column: Create New Assignment Form -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">+ Create Assignment</h2>
+    </div>
+
+    <form action="{{ url_for('faculty.assignments') }}" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="title">Assignment Title *</label>
+        <input type="text" class="form-control" name="title" id="title" required 
+               placeholder="e.g. CS201: Sorting Algorithms">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="subject">Course Subject *</label>
+        <input type="text" class="form-control" name="subject" id="subject" required 
+               placeholder="e.g. Data Structures & Algorithms">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Description / Problem Statement</label>
+        <textarea class="form-control" name="description" id="description" rows="3" 
+                  placeholder="Briefly describe the requirements..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Permitted Programming Languages *</label>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background-color: var(--bg-alt); border-radius: 6px; border: 1px solid var(--border-light);">
+          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" name="allowed_languages" value="python" checked> Python (.py)
+          </label>
+          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" name="allowed_languages" value="c" checked> C (.c)
+          </label>
+          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" name="allowed_languages" value="cpp" checked> C++ (.cpp)
+          </label>
+          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" name="allowed_languages" value="java" checked> Java (.java)
+          </label>
+          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" name="allowed_languages" value="javascript" checked> JavaScript (.js)
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="deadline">Submission Deadline</label>
+        <input type="text" class="form-control" name="deadline" id="deadline" 
+               placeholder="YYYY-MM-DD HH:MM">
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+        Create Assignment
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

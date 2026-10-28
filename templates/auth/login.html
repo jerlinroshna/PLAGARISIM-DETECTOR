@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - Academic Plagiarism Detector{% endblock %}
+
+{% block auth_content %}
+<div class="login-card">
+  <div class="login-header">
+    <div class="login-emblem">&#127891;</div>
+    <div class="login-title">Academic Portal</div>
+    <div class="login-subtitle">Source-Code Plagiarism Detection System</div>
+  </div>
+
+  <div class="login-body">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Role Selector Toggle -->
+    <div class="role-toggle-group">
+      <button type="button" class="role-toggle-btn {% if role == 'student' %}active{% endif %}" data-role="student">
+        Student Portal
+      </button>
+      <button type="button" class="role-toggle-btn {% if role == 'faculty' %}active{% endif %}" data-role="faculty">
+        Faculty Portal
+      </button>
+    </div>
+
+    <form action="{{ url_for('auth.login') }}" method="POST">
+      <input type="hidden" name="role" id="login-role-input" value="{{ role }}">
+
+      <div class="form-group">
+        <label class="form-label" for="username">Username / Institutional ID</label>
+        <input type="text" class="form-control" id="username" name="username" 
+               placeholder="Enter your username or ID" required autofocus autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" class="form-control" id="password" name="password" 
+               placeholder="Enter your password" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px; margin-top: 10px; font-weight: 600;">
+        Sign In to Portal
+      </button>
+    </form>
+
+    <div class="login-footer-notice">
+      Department of Computer Science & Engineering<br>
+      Authorized institutional access only. All activities are monitored.
+    </div>
+  </div>
+</div>
+{% endblock %}

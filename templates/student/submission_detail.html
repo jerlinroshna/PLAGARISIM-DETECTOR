@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Submission #{{ sub.id }} - Result{% endblock %}
+{% block breadcrumb_page %}Submission #{{ sub.id }}{% endblock %}
+{% block page_title %}Submission Result & Integrity Evaluation{% endblock %}
+
+{% block content %}
+<!-- Top Navigation & Status Bar -->
+<div class="sub-detail-topbar">
+  <a href="{{ url_for('student.submissions') }}" class="btn btn-sm btn-secondary" style="display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;">
+    &larr; Back to My Submissions
+  </a>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <span class="badge" style="background: #f1f5f9; color: #334155; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; padding: 6px 12px; border-radius: 6px;">
+      ID #{{ sub.id }}
+    </span>
+    <span class="badge badge-status {% if sub.analysis_status == 'completed' %}active{% else %}pending{% endif %}" style="font-size: 0.82rem; padding: 6px 14px;">
+      Screening Status: {{ sub.analysis_status|capitalize }}
+    </span>
+  </div>
+</div>
+
+{% set score = sub.combined_similarity_score or 0.0 %}
+{% set label = sub.similarity_label or 'Low Similarity' %}
+{% set score_cls = 'low' %}
+{% if score >= 70.0 %}
+  {% set score_cls = 'high' %}
+{% elif score >= 30.0 %}
+  {% set score_cls = 'medium' %}
+{% endif %}
+
+{% set rev_status = sub.review_status or 'Pending Review' %}
+{% set rev_cls = 'pending' %}
+{% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+  {% set rev_cls = 'reviewed' %}
+{% elif rev_status == 'Further Investigation Required' %}
+  {% set rev_cls = 'investigate' %}
+{% endif %}
+
+<!-- Integrated Executive Grid (Fits above the fold!) -->
+<div class="sub-detail-hero-grid">
+  <!-- Left Side: Comprehensive Submission Info & Math Breakdown -->
+  <div class="sub-detail-main-card">
+    <div class="sub-detail-header-block">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 0.76rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">
+            Submission Information
+          </span>
+          <span class="badge" style="background: #eff6ff; color: #1e40af; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">
+            {{ sub.subject }}
+          </span>
+        </div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; line-height: 1.3;">
+          {{ sub.assignment_title }}
+        </h2>
+        <div style="font-size: 0.86rem; color: #475569;">
+          Submission Title: <strong style="color: #0f172a;">{{ sub.title }}</strong>
+        </div>
+      </div>
+
+      <!-- Compact 3-Column Metadata Strip -->
+      <div class="sub-detail-meta-strip">
+        <div class="sub-detail-meta-col">
+          <span class="sub-meta-label">Programming Language</span>
+            {% set lang_raw = (sub.programming_language or '')|lower %}
+            {% if 'unsupported' in lang_raw or lang_raw == '' %}
+              <span class="lang-badge-compact unsupported" style="font-size: 11px;">Unsupported</span>
+            {% elif lang_raw in ['javascript', 'js'] %}
+              <span class="lang-badge-compact" style="font-size: 11px;">JavaScript</span>
+            {% elif lang_raw == 'python' %}
+              <span class="lang-badge-compact" style="font-size: 11px;">Python</span>
+            {% elif lang_raw == 'cpp' %}
+              <span class="lang-badge-compact" style="font-size: 11px;">C++</span>
+            {% elif lang_raw == 'java' %}
+              <span class="lang-badge-compact" style="font-size: 11px;">Java</span>
+            {% elif lang_raw == 'c' %}
+              <span class="lang-badge-compact" style="font-size: 11px;">C</span>
+            {% else %}
+              <span class="lang-badge-compact" style="font-size: 11px;">{{ sub.programming_language|capitalize }}</span>
+            {% endif %}
+        </div>
+        <div class="sub-detail-meta-col">
+          <span class="sub-meta-label">Source Filename</span>
+          <div class="sub-meta-val" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #334155;">
+            {{ sub.source_filename }}
+          </div>
+        </div>
+        <div class="sub-detail-meta-col">
+          <span class="sub-meta-label">Submitted On</span>
+          <div class="sub-meta-val" style="font-size: 12px; color: #334155;">
+            {{ sub.submitted_at }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-Engine Mathematical Model Breakdown -->
+    <div class="sub-formula-compact-block">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 0.78rem; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.4px;">
+          Multi-Engine Weighted Breakdown
+        </span>
+        <span style="font-size: 0.72rem; color: #64748b;">
+          Algorithm: 40% Text Winnowing + 60% AST Structural
+        </span>
+      </div>
+
+      <div class="sub-formula-compact-row">
+        <!-- Component 1: Text Winnowing -->
+        <div class="sub-formula-cell">
+          <div class="sub-formula-cell-header">
+            <span>Text Winnowing</span>
+            <span class="weight-tag">40% weight</span>
+          </div>
+          <div class="sub-formula-score-val" style="color: #2563eb;">{{ sub.text_similarity_score or 0.0 }}%</div>
+          <div class="sub-formula-bar-bg">
+            <div class="sub-formula-bar-fill" style="width: {{ sub.text_similarity_score or 0.0 }}%; background: #3b82f6;"></div>
+          </div>
+        </div>
+
+        <div class="sub-formula-operator">+</div>
+
+        <!-- Component 2: AST Structural -->
+        <div class="sub-formula-cell">
+          <div class="sub-formula-cell-header">
+            <span>AST Structural</span>
+            <span class="weight-tag">60% weight</span>
+          </div>
+          <div class="sub-formula-score-val" style="color: #4f46e5;">{{ sub.ast_similarity_score or 0.0 }}%</div>
+          <div class="sub-formula-bar-bg">
+            <div class="sub-formula-bar-fill" style="width: {{ sub.ast_similarity_score or 0.0 }}%; background: #6366f1;"></div>
+          </div>
+        </div>
+
+        <div class="sub-formula-operator">=</div>
+
+        <!-- Component 3: Combined Similarity -->
+        <div class="sub-formula-cell combined">
+          <div class="sub-formula-cell-header">
+            <span style="color: #1e3a8a; font-weight: 700;">Combined Score</span>
+            <span class="weight-tag combined">Final</span>
+          </div>
+          <div class="sub-formula-score-val combined">{{ sub.combined_similarity_score or 0.0 }}%</div>
+          <div class="sub-formula-bar-bg" style="background: #bfdbfe;">
+            <div class="sub-formula-bar-fill" style="width: {{ sub.combined_similarity_score or 0.0 }}%; background: #1e40af;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expandable Educational Accordion: How Structural Comparison Works -->
+      <div style="margin-top: 14px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+        <div id="accordionExplanationHeader" style="padding: 9px 14px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+          <span style="font-size: 0.8rem; font-weight: 600; color: #1e40af;">
+            &#129302; How structural comparison works (AST Normalization)
+          </span>
+          <span id="accordionExplanationIcon" style="font-size: 0.72rem; color: #64748b;">&#9660;</span>
+        </div>
+        <div id="accordionExplanationBody" style="display: none; padding: 14px; font-size: 0.8rem; line-height: 1.55; color: #334155; background: #ffffff; border-top: 1px solid #f1f5f9;">
+          <p style="margin-bottom: 6px;">
+            The engine maps source tokens into an Abstract Syntax Tree (AST), stripping away variable identifiers and formatting differences to detect algorithmic structure.
+          </p>
+          <p style="margin: 0; color: #64748b; font-size: 0.76rem;">
+            <em>Standard algorithmic patterns common to classroom templates are evaluated during faculty review.</em>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Circular Gauge & Faculty Review Summary Card -->
+  <div class="sub-detail-side-card">
+    <div style="font-size: 0.74rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; text-align: center; margin-bottom: 8px;">
+      Automated Screening Metric
+    </div>
+
+    <!-- Scaled Compact Circular Dial -->
+    <div class="similarity-score-circle {{ score_cls }}" style="width: 105px; height: 105px; border-width: 6px; margin: 0 auto 10px auto;">
+      <span class="similarity-circle-num" style="font-size: 1.85rem;">{{ score }}%</span>
+      <span class="similarity-circle-tag" style="font-size: 0.65rem;">{{ label }}</span>
+    </div>
+
+    <!-- Score Bands Scale -->
+    <div style="display: flex; justify-content: center; gap: 14px; font-size: 0.72rem; color: #64748b; margin-bottom: 14px;">
+      <div style="display: flex; align-items: center; gap: 4px;">
+        <span class="legend-dot low"></span>
+        <span>&lt;30%</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px;">
+        <span class="legend-dot medium"></span>
+        <span>30–69%</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px;">
+        <span class="legend-dot high"></span>
+        <span>&ge;70%</span>
+      </div>
+    </div>
+
+    <!-- Faculty Review Snippet in the side card -->
+    <div class="sub-side-review-block">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 0.74rem; font-weight: 600; color: #475569; text-transform: uppercase;">Faculty Review</span>
+        <span class="review-badge-compact {{ rev_cls }}" style="font-size: 11px;">
+          {% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+            &#10003; Reviewed
+          {% elif rev_status == 'Further Investigation Required' %}
+            &#9888; Investigation
+          {% else %}
+            &#9717; Pending Review
+          {% endif %}
+        </span>
+      </div>
+
+      {% if sub.review_notes %}
+        <div style="font-size: 0.78rem; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px 10px; line-height: 1.4; margin-bottom: 6px;">
+          {{ sub.review_notes }}
+        </div>
+      {% else %}
+        <div style="font-size: 0.74rem; color: #64748b; line-height: 1.4; margin-bottom: 6px;">
+          Automated screening complete. Official reviews recorded periodically.
+        </div>
+      {% endif %}
+
+      <!-- Clarification status or action trigger -->
+      {% if clarification %}
+        <div style="font-size: 0.74rem; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 6px 8px; margin-top: 6px;">
+          <strong>Clarification:</strong> {{ clarification.status }} &bull; {{ clarification.student_statement[:40] }}...
+        </div>
+      {% elif sub.review_status == 'Further Investigation Required' or score >= 70.0 %}
+        <div style="margin-top: 8px;">
+          <button type="button" class="btn btn-sm btn-outline" id="openClarificationModalBtn" style="width: 100%; font-size: 0.76rem; height: 30px; padding: 0 8px;">
+            &#9998; Request Clarification
+          </button>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Compact Notice -->
+    <div style="font-size: 0.7rem; color: #94a3b8; line-height: 1.35; margin-top: 10px; text-align: center;">
+      Automated indicator &bull; Does not establish misconduct
+    </div>
+  </div>
+</div>
+
+<!-- Submission Status Timeline -->
+<div class="card" style="margin-bottom: 22px;">
+  <div class="card-header" style="padding: 14px 20px;">
+    <h3 class="card-title" style="font-size: 0.95rem;">Submission Lifecycle Timeline</h3>
+  </div>
+
+  <div class="submission-timeline" style="padding: 16px 20px;">
+    <div class="timeline-step completed">
+      <div class="timeline-node">&#10003;</div>
+      <div class="timeline-step-label">Code Submitted</div>
+      <div class="timeline-step-time">{{ sub.submitted_at[:10] }}</div>
+    </div>
+    <div class="timeline-step completed">
+      <div class="timeline-node">&#10003;</div>
+      <div class="timeline-step-label">File Validated</div>
+      <div class="timeline-step-time">Passed</div>
+    </div>
+    <div class="timeline-step completed">
+      <div class="timeline-node">&#10003;</div>
+      <div class="timeline-step-label">Token Screening</div>
+      <div class="timeline-step-time">Winnowing 40%</div>
+    </div>
+    <div class="timeline-step completed">
+      <div class="timeline-node">&#10003;</div>
+      <div class="timeline-step-label">AST Structural</div>
+      <div class="timeline-step-time">Tree Align 60%</div>
+    </div>
+    <div class="timeline-step completed">
+      <div class="timeline-node">&#10003;</div>
+      <div class="timeline-step-label">Score Generated</div>
+      <div class="timeline-step-time">{{ score }}% Combined</div>
+    </div>
+    <div class="timeline-step {% if sub.review_status and sub.review_status != 'Pending Review' %}reviewed{% endif %}">
+      <div class="timeline-node">
+        {% if sub.review_status and sub.review_status != 'Pending Review' %}&#10003;{% else %}?{% endif %}
+      </div>
+      <div class="timeline-step-label">Faculty Review</div>
+      <div class="timeline-step-time">{{ sub.review_status or 'Pending' }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Clarification Modal -->
+<div class="modal-backdrop" id="clarificationModal">
+
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title">Request Clarification / Provide Context</h3>
+      <button type="button" id="closeClarificationModalBtn" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">&times;</button>
+    </div>
+    <form action="{{ url_for('student.submit_clarification', sub_id=sub.id) }}" method="POST">
+      <div class="modal-body">
+        <p style="font-size: 0.84rem; color: #475569; margin-bottom: 12px;">
+          Explain your implementation details, source references, or algorithmic context for course faculty review:
+        </p>
+        <textarea name="statement" id="clarificationStatement" class="form-control" rows="5" maxlength="1000" required placeholder="Describe how your solution was developed, any authorized references consulted, or algorithmic decisions made..." style="font-size: 0.86rem; padding: 10px; border-radius: 6px;"></textarea>
+        <div style="display: flex; justify-content: flex-end; font-size: 0.74rem; color: #64748b; margin-top: 6px;">
+          <span id="clarificationCharCount">0</span> / 1000 characters
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('clarificationModal').classList.remove('active')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit Clarification</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Submitted Source Code Viewer -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">Submitted Source Code</h3>
+      <span style="font-size: 0.78rem; color: #64748b;">Filename: <code>{{ sub.source_filename }}</code> &bull; Language: <code>{{ sub.programming_language|upper }}</code></span>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <input type="text" id="codeLineSearch" placeholder="Search line text..." style="font-size: 0.76rem; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; width: 140px;">
+      <button type="button" class="btn btn-sm btn-outline" id="copyCodeBtn">
+        &#128203; Copy Code
+      </button>
+      <button type="button" class="btn btn-sm btn-outline" id="fullscreenCodeBtn">
+        &#x26F6; Fullscreen
+      </button>
+    </div>
+  </div>
+
+  <div class="modern-code-container">
+    <div class="code-viewer-toolbar">
+      <span>{{ sub.source_filename }}</span>
+      <span style="font-size: 0.76rem; color: #8b949e;">Student Code View Only &bull; Read-Only</span>
+    </div>
+    <div class="code-viewer-body">
+      {% set lines = sub.source_code.splitlines() %}
+      {% for line in lines %}
+        {% set is_matched = loop.index in student_matched_lines %}
+        <div class="code-line-row {% if is_matched %}matched-line{% endif %}">
+          <span class="code-line-num">{{ loop.index }}</span>
+          <span class="code-line-text">{{ line }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if student_matched_lines and student_matched_lines|length > 0 %}
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: #d97706; margin-top: 10px;">
+      <span style="width: 12px; height: 12px; background: rgba(245, 158, 11, 0.4); border-left: 3px solid #f59e0b; display: inline-block;"></span>
+      <span>Highlighted lines represent overlapping token/AST patterns aligned with benchmark historical implementations.</span>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Strict Privacy & Integrity Assurance Banner -->
+<div class="card" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+  <div style="display: flex; gap: 14px; align-items: flex-start;">
+    <span style="font-size: 1.5rem; color: #1e40af;">&#128274;</span>
+    <div style="font-size: 0.82rem; line-height: 1.5; color: #334155;">
+      <strong style="color: #0f172a; display: block; margin-bottom: 2px;">Student Privacy & Data Confidentiality Assurance</strong>
+      Under institutional privacy policy, students are permitted to view only their own code submissions and automated score statistics. Raw source files from other students and confidential faculty comparison panes remain strictly protected and cannot be viewed through the student portal.
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb_page %}Dashboard{% endblock %}
+{% block page_title %}Student Overview Dashboard{% endblock %}
+
+{% block content %}
+<!-- Student Welcome Banner -->
+<div class="welcome-hero">
+  <div>
+    <div class="welcome-hero-title">Welcome back, {{ user.full_name }} &#128075;</div>
+    <div class="welcome-hero-subtitle">
+      Track your programming submissions, automated analysis results, and academic integrity status from one place.
+    </div>
+    <div class="welcome-meta-chips">
+      <div class="meta-chip">
+        <span>&#127891;</span> Roll Number: <strong>{{ user.username }}</strong>
+      </div>
+      <div class="meta-chip">
+        <span>&#127979;</span> Dept: <strong>Information Technology</strong>
+      </div>
+      <div class="meta-chip">
+        <span>&#128197;</span> Academic Year: <strong>2024–2025</strong>
+      </div>
+      <div class="meta-chip">
+        <span style="color: #4ade80;">&#9679;</span> Session Active
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('student.submit') }}" class="btn btn-primary" style="background: #ffffff; color: #1e3a8a; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+      + Submit Code
+    </a>
+  </div>
+</div>
+
+<!-- Primary Metric Cards -->
+<div class="metrics-row">
+  <div class="modern-stat-card">
+    <div class="stat-icon-wrapper blue">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+    </div>
+    <div>
+      <div class="modern-stat-value">{{ total_sub }}</div>
+      <div class="modern-stat-label">My Submissions</div>
+      <div class="modern-stat-desc">Total source files submitted</div>
+    </div>
+  </div>
+
+  <div class="modern-stat-card">
+    <div class="stat-icon-wrapper green">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    </div>
+    <div>
+      <div class="modern-stat-value">{{ completed_sub }}</div>
+      <div class="modern-stat-label">Completed Analyses</div>
+      <div class="modern-stat-desc">Screenings analyzed by engine</div>
+    </div>
+  </div>
+
+  <div class="modern-stat-card">
+    <div class="stat-icon-wrapper amber">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+    </div>
+    <div>
+      <div class="modern-stat-value">{{ pending_sub }}</div>
+      <div class="modern-stat-label">Pending Screenings</div>
+      <div class="modern-stat-desc">In automated processing queue</div>
+    </div>
+  </div>
+
+  <div class="modern-stat-card">
+    <div class="stat-icon-wrapper indigo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+    </div>
+    <div>
+      <div class="modern-stat-value">{{ active_assignments }}</div>
+      <div class="modern-stat-label">Active Assignments</div>
+      <div class="modern-stat-desc">Currently open for submissions</div>
+    </div>
+  </div>
+</div>
+
+<!-- Second Row: Similarity Overview & Submission Activity -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 24px;">
+  <!-- Similarity Distribution Chart -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Similarity Overview</h2>
+        <span style="font-size: 0.78rem; color: #64748b;">Distribution across automated score bands</span>
+      </div>
+      <span class="badge" style="background: #f1f5f9; color: #475569;">{{ similarity_dist.total }} Analyzed</span>
+    </div>
+
+    <div class="distribution-container">
+      <!-- SVG Donut Chart -->
+      <svg class="donut-chart-svg" viewBox="0 0 100 100">
+        <circle class="donut-ring-track" cx="50" cy="50" r="38"></circle>
+        {% set total_items = similarity_dist.total %}
+        {% if total_items > 0 %}
+          {% set low_p = (similarity_dist.low / total_items * 100)|round|int %}
+          {% set med_p = (similarity_dist.medium / total_items * 100)|round|int %}
+          {% set high_p = (similarity_dist.high / total_items * 100)|round|int %}
+          {% set circ = 238.76 %}
+          <!-- Low Segment (Green) -->
+          <circle class="donut-segment" cx="50" cy="50" r="38" stroke="#10b981"
+                  stroke-dasharray="{{ (low_p / 100 * circ) }} {{ circ }}"
+                  stroke-dashoffset="0"></circle>
+          <!-- Medium Segment (Amber) -->
+          <circle class="donut-segment" cx="50" cy="50" r="38" stroke="#f59e0b"
+                  stroke-dasharray="{{ (med_p / 100 * circ) }} {{ circ }}"
+                  stroke-dashoffset="-{{ (low_p / 100 * circ) }}"></circle>
+          <!-- High Segment (Red) -->
+          <circle class="donut-segment" cx="50" cy="50" r="38" stroke="#ef4444"
+                  stroke-dasharray="{{ (high_p / 100 * circ) }} {{ circ }}"
+                  stroke-dashoffset="-{{ ((low_p + med_p) / 100 * circ) }}"></circle>
+        {% else %}
+          <circle class="donut-segment" cx="50" cy="50" r="38" stroke="#cbd5e1"
+                  stroke-dasharray="238.76 238.76"></circle>
+        {% endif %}
+      </svg>
+
+      <!-- Legend -->
+      <div class="donut-legend">
+        <div class="legend-row">
+          <div class="legend-label-group">
+            <span class="legend-dot low"></span>
+            <span>Low Similarity (< 30%)</span>
+          </div>
+          <strong>{{ similarity_dist.low }}</strong>
+        </div>
+        <div class="legend-row">
+          <div class="legend-label-group">
+            <span class="legend-dot medium"></span>
+            <span>Medium Similarity (30%–69%)</span>
+          </div>
+          <strong>{{ similarity_dist.medium }}</strong>
+        </div>
+        <div class="legend-row">
+          <div class="legend-label-group">
+            <span class="legend-dot high"></span>
+            <span>High Similarity (&ge; 70%)</span>
+          </div>
+          <strong>{{ similarity_dist.high }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Educational Disclaimer Notice -->
+    <div class="neutral-disclaimer-box" style="margin-top: 14px;">
+      <span style="font-size: 1.1rem; color: #2563eb;">&#9432;</span>
+      <div>
+        <strong>Important Context:</strong> Automated similarity score bands are investigative screening indicators and do <em>not</em> represent automated academic misconduct verdicts.
+      </div>
+    </div>
+  </div>
+
+  <!-- Submission Activity Timeline -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Submission Activity</h2>
+        <span style="font-size: 0.78rem; color: #64748b;">Submissions timeline & screening throughput</span>
+      </div>
+      <span class="badge" style="background: #eff6ff; color: #1e40af; font-weight: 600;">Recent Days</span>
+    </div>
+
+    <div class="activity-bars-wrapper">
+      {% if activity_data and activity_data|length > 0 %}
+        {% for act in activity_data %}
+          {% set bar_height = (act.count * 30) %}
+          {% if bar_height > 100 %}{% set bar_height = 100 %}{% endif %}
+          <div class="activity-bar-col">
+            <span style="font-size: 0.7rem; font-weight: 600; color: #1e40af;">{{ act.count }}</span>
+            <div class="activity-bar-pillar" style="height: {{ bar_height }}px;"></div>
+            <span class="activity-bar-label">{{ act.date[5:] }}</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="activity-bar-col">
+          <div class="activity-bar-pillar" style="height: 25px; opacity: 0.4;"></div>
+          <span class="activity-bar-label">Day 1</span>
+        </div>
+        <div class="activity-bar-col">
+          <div class="activity-bar-pillar" style="height: 50px; opacity: 0.4;"></div>
+          <span class="activity-bar-label">Day 2</span>
+        </div>
+        <div class="activity-bar-col">
+          <div class="activity-bar-pillar" style="height: 70px; opacity: 0.4;"></div>
+          <span class="activity-bar-label">Day 3</span>
+        </div>
+        <div class="activity-bar-col">
+          <div class="activity-bar-pillar" style="height: 40px; opacity: 0.4;"></div>
+          <span class="activity-bar-label">Day 4</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <div style="font-size: 0.78rem; color: #64748b; margin-top: 14px; display: flex; justify-content: space-between;">
+      <span>Screening Engine: <strong>AST + Token Alignment</strong></span>
+      <span>Historical Reference Pool: <strong>{{ historical_count }} benchmarks</strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- Third Row: Recent Submissions Section (Full Width, Spacious Desktop Table & Mobile Cards) -->
+<div class="recent-submissions-card">
+  <div class="recent-subs-header">
+    <div>
+      <h2 class="recent-subs-title">Recent Submissions</h2>
+      <p class="recent-subs-subtitle">Your latest code submissions and screening results</p>
+    </div>
+    <a href="{{ url_for('student.submissions') }}" class="recent-subs-viewall-btn">
+      View All ({{ total_sub }})
+    </a>
+  </div>
+
+  <div class="recent-subs-divider"></div>
+
+  {% if recent_submissions and recent_submissions|length > 0 %}
+    <!-- Desktop Table View (>= 860px) -->
+    <div class="recent-subs-desktop-table">
+      <table class="recent-subs-table">
+        <thead>
+          <tr>
+            <th class="col-assignment">Assignment</th>
+            <th class="col-language">Language</th>
+            <th class="col-submitted">Submitted</th>
+            <th class="col-similarity">Similarity</th>
+            <th class="col-review">Faculty Review</th>
+            <th class="col-action">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sub in recent_submissions %}
+            {% set lang_raw = (sub.programming_language or '')|upper %}
+            {% set is_unsupported = 'UNSUPPORTED' in lang_raw or lang_raw == '' %}
+            {% set is_unmatched = 'UNMATCHED' in (sub.assignment_title or '')|upper %}
+
+            {% set score = sub.combined_similarity_score %}
+            {% set sim_cls = 'low' %}
+            {% if score is not none %}
+              {% if score >= 70.0 %}{% set sim_cls = 'high' %}
+              {% elif score >= 30.0 %}{% set sim_cls = 'medium' %}
+              {% endif %}
+            {% endif %}
+
+            {% set rev_status = sub.review_status or 'Pending Review' %}
+            {% set rev_cls = 'pending' %}
+            {% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+              {% set rev_cls = 'reviewed' %}
+            {% elif rev_status == 'Further Investigation Required' %}
+              {% set rev_cls = 'investigate' %}
+            {% endif %}
+
+            <tr>
+              <!-- Assignment Column (32%) -->
+              <td class="col-assignment">
+                {% if is_unmatched %}
+                  <div class="asgn-unmatched-badge">Unmatched Assignment</div>
+                  <div class="asgn-cell-meta" title="{{ sub.title }} &bull; {{ sub.subject }}">
+                    {{ sub.title }} &bull; {{ sub.subject }}
+                  </div>
+                {% else %}
+                  <div class="asgn-cell-title" title="{{ sub.assignment_title }}">
+                    {{ sub.assignment_title }}
+                  </div>
+                  <div class="asgn-cell-meta" title="{{ sub.title }} &bull; {{ sub.subject }}">
+                    {{ sub.title }} &bull; {{ sub.subject }}
+                  </div>
+                {% endif %}
+              </td>
+
+              <!-- Language Column (11%) -->
+              <td class="col-language">
+                {% if is_unsupported %}
+                  <span class="lang-badge-compact unsupported">Unsupported</span>
+                {% elif sub.programming_language|lower == 'javascript' or sub.programming_language|lower == 'js' %}
+                  <span class="lang-badge-compact">JavaScript</span>
+                {% elif sub.programming_language|lower == 'python' %}
+                  <span class="lang-badge-compact">Python</span>
+                {% elif sub.programming_language|lower == 'cpp' %}
+                  <span class="lang-badge-compact">C++</span>
+                {% elif sub.programming_language|lower == 'java' %}
+                  <span class="lang-badge-compact">Java</span>
+                {% elif sub.programming_language|lower == 'c' %}
+                  <span class="lang-badge-compact">C</span>
+                {% else %}
+                  <span class="lang-badge-compact">{{ sub.programming_language|capitalize }}</span>
+                {% endif %}
+              </td>
+
+              <!-- Submitted Column (14%) -->
+              <td class="col-submitted">
+                <div class="sub-date-primary">{{ sub.submitted_at[:10] }}</div>
+                <div class="sub-time-secondary">{{ sub.submitted_at[11:16] }}</div>
+              </td>
+
+              <!-- Similarity Column (16%) -->
+              <td class="col-similarity">
+                {% if score is not none %}
+                  <span class="sim-badge-compact {{ sim_cls }}">
+                    {{ score }}% &bull; {{ sub.similarity_label }}
+                  </span>
+                {% else %}
+                  <span class="sim-badge-compact" style="background: #f1f5f9; color: #64748b;">
+                    Analyzing...
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- Faculty Review Column (17%) -->
+              <td class="col-review">
+                <span class="review-badge-compact {{ rev_cls }}">
+                  {{ rev_status }}
+                </span>
+              </td>
+
+              <!-- Action Column (10%) -->
+              <td class="col-action">
+                <a href="{{ url_for('student.submission_detail', sub_id=sub.id) }}" class="action-btn-compact">
+                  View Result &rarr;
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Card View (< 860px) -->
+    <div class="recent-subs-mobile-cards">
+      {% for sub in recent_submissions %}
+        {% set lang_raw = (sub.programming_language or '')|upper %}
+        {% set is_unsupported = 'UNSUPPORTED' in lang_raw or lang_raw == '' %}
+        {% set is_unmatched = 'UNMATCHED' in (sub.assignment_title or '')|upper %}
+
+        {% set score = sub.combined_similarity_score %}
+        {% set sim_cls = 'low' %}
+        {% if score is not none %}
+          {% if score >= 70.0 %}{% set sim_cls = 'high' %}
+          {% elif score >= 30.0 %}{% set sim_cls = 'medium' %}
+          {% endif %}
+        {% endif %}
+
+        {% set rev_status = sub.review_status or 'Pending Review' %}
+        {% set rev_cls = 'pending' %}
+        {% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+          {% set rev_cls = 'reviewed' %}
+        {% elif rev_status == 'Further Investigation Required' %}
+          {% set rev_cls = 'investigate' %}
+        {% endif %}
+
+        <div class="mobile-sub-card">
+          <div class="mobile-sub-header">
+            <div>
+              {% if is_unmatched %}
+                <div class="asgn-unmatched-badge">Unmatched Assignment</div>
+              {% else %}
+                <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px;">
+                  {{ sub.assignment_title }}
+                </div>
+              {% endif %}
+              <div class="mobile-sub-meta">
+                {{ sub.title }} &bull; {{ sub.subject }}
+              </div>
+            </div>
+            {% if is_unsupported %}
+              <span class="lang-badge-compact unsupported">Unsupported</span>
+            {% elif sub.programming_language|lower == 'javascript' or sub.programming_language|lower == 'js' %}
+              <span class="lang-badge-compact">JavaScript</span>
+            {% elif sub.programming_language|lower == 'python' %}
+              <span class="lang-badge-compact">Python</span>
+            {% elif sub.programming_language|lower == 'cpp' %}
+              <span class="lang-badge-compact">C++</span>
+            {% elif sub.programming_language|lower == 'java' %}
+              <span class="lang-badge-compact">Java</span>
+            {% elif sub.programming_language|lower == 'c' %}
+              <span class="lang-badge-compact">C</span>
+            {% else %}
+              <span class="lang-badge-compact">{{ sub.programming_language|capitalize }}</span>
+            {% endif %}
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+            <span>Submitted: <strong style="color: #1e293b;">{{ sub.submitted_at[:10] }} &bull; {{ sub.submitted_at[11:16] }}</strong></span>
+          </div>
+
+          <div class="mobile-sub-badges">
+            <div>
+              <span style="font-size: 0.72rem; color: #64748b; display: block; margin-bottom: 2px;">Similarity:</span>
+              {% if score is not none %}
+                <span class="sim-badge-compact {{ sim_cls }}">
+                  {{ score }}% &bull; {{ sub.similarity_label }}
+                </span>
+              {% else %}
+                <span class="sim-badge-compact" style="background: #f1f5f9; color: #64748b;">Analyzing...</span>
+              {% endif %}
+            </div>
+
+            <div>
+              <span style="font-size: 0.72rem; color: #64748b; display: block; margin-bottom: 2px;">Faculty Review:</span>
+              <span class="review-badge-compact {{ rev_cls }}">
+                {{ rev_status }}
+              </span>
+            </div>
+          </div>
+
+          <div style="margin-top: 4px;">
+            <a href="{{ url_for('student.submission_detail', sub_id=sub.id) }}" class="action-btn-compact" style="width: 100%;">
+              View Result &rarr;
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state-card">
+      <div class="empty-state-icon">&#128196;</div>
+      <div class="empty-state-title">No recent submissions</div>
+      <div class="empty-state-desc">
+        Your submitted assignments will appear here after you submit code.
+      </div>
+      <a href="{{ url_for('student.submit') }}" class="btn btn-primary">+ Submit Code</a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Fourth Row: Active Assignments Grid Card -->
+<div class="card" style="margin-bottom: 0;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Active Assignments</h2>
+      <span style="font-size: 0.78rem; color: #64748b;">Open submission windows accepting programming submissions</span>
+    </div>
+    <span class="badge badge-status active">Open for Submissions</span>
+  </div>
+
+  {% if upcoming_assignments and upcoming_assignments|length > 0 %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+      {% for asgn in upcoming_assignments %}
+        <div style="padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+              <div style="font-weight: 700; font-size: 0.95rem; color: #1e3a8a;">{{ asgn.title }}</div>
+              <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.7rem;">Active</span>
+            </div>
+            <div style="font-size: 0.8rem; color: #475569; margin-bottom: 8px;">
+              Subject: <strong>{{ asgn.subject }}</strong>
+            </div>
+            <div style="font-size: 0.74rem; color: #64748b; line-height: 1.4; margin-bottom: 12px;">
+              Deadline: <strong>{{ asgn.deadline or 'Open Term Submission' }}</strong><br>
+              Allowed Languages: <code style="font-size: 0.74rem;">{{ asgn.allowed_languages|upper }}</code>
+            </div>
+          </div>
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: flex-end;">
+            <a href="{{ url_for('student.submit') }}" class="btn btn-sm btn-outline" style="font-size: 0.78rem;">
+              Submit Solution &rarr;
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state-card" style="padding: 24px;">
+      <div style="font-size: 1.8rem; margin-bottom: 6px;">&#128218;</div>
+      <div style="font-size: 0.88rem; font-weight: 600;">No active assignments</div>
+      <div style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">All assignment submission windows are currently closed.</div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

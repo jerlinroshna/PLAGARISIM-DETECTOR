@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty Dashboard{% endblock %}
+{% block page_title %}Faculty Administration Dashboard{% endblock %}
+
+{% block content %}
+<!-- Faculty Banner -->
+<div class="page-banner">
+  <div>
+    <div class="banner-title">Welcome, {{ user.full_name }}</div>
+    <div class="banner-desc">
+      Instructor ID: <strong>{{ user.username }}</strong> &bull; Department of Computer Science & Engineering &bull; Academic Year 2024–2025
+    </div>
+  </div>
+  <div>
+    <span class="badge badge-status active" style="font-size: 0.84rem; padding: 6px 14px;">
+      &#9679; System Operational
+    </span>
+  </div>
+</div>
+
+<!-- Faculty Institutional Metrics Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">Student Accounts</span>
+    <span class="stat-value">{{ total_students }}</span>
+    <span class="stat-subtext">Active student enrollments</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Active Assignments</span>
+    <span class="stat-value">{{ total_assignments }}</span>
+    <span class="stat-subtext">Course assignments configured</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Total Submissions</span>
+    <span class="stat-value">{{ total_submissions }}</span>
+    <span class="stat-subtext">Student solutions received</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Analyses Completed</span>
+    <span class="stat-value">{{ analyses_completed }}</span>
+    <span class="stat-subtext">Automated AST evaluations</span>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid #ef4444;">
+    <span class="stat-label">Requires Review</span>
+    <span class="stat-value" style="color: #ef4444;">{{ reviews_required }}</span>
+    <span class="stat-subtext">Pending instructor evaluation</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Historical Records</span>
+    <span class="stat-value">{{ historical_count }}</span>
+    <span class="stat-subtext">Previous-year code benchmarks</span>
+  </div>
+</div>
+
+<!-- Dashboard Overview Panels -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
+  <!-- Screening Policy & Threshold Guidelines -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h2 class="card-title">Department Plagiarism Screening Policy & Threshold Standards</h2>
+    </div>
+    <div style="font-size: 0.88rem; line-height: 1.6; color: var(--text-main);">
+      <p style="margin-bottom: 12px;">
+        Similarity evaluations combine token-level winnowing (40%) and abstract syntax tree structural matching (60%).
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background-color: var(--badge-high-bg); border-radius: 4px; border: 1px solid var(--badge-high-border);">
+          <span style="font-weight: 600; color: var(--badge-high-text);">High Similarity (&ge; 70%)</span>
+          <span style="font-size: 0.8rem; color: var(--badge-high-text);">Mandatory instructor inspection required</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background-color: var(--badge-med-bg); border-radius: 4px; border: 1px solid var(--badge-med-border);">
+          <span style="font-weight: 600; color: var(--badge-med-text);">Medium Similarity (30% &ndash; 69%)</span>
+          <span style="font-size: 0.8rem; color: var(--badge-med-text);">Review for algorithmic overlap recommended</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background-color: var(--badge-low-bg); border-radius: 4px; border: 1px solid var(--badge-low-border);">
+          <span style="font-weight: 600; color: var(--badge-low-text);">Low Similarity (&lt; 30%)</span>
+          <span style="font-size: 0.8rem; color: var(--badge-low-text);">Baseline algorithmic similarity bounds</span>
+        </div>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">
+        Note: Algorithmic scores are assistive screening indicators. Formal academic determinations require instructor review.
+      </p>
+    </div>
+  </div>
+
+  <!-- Analysis Pipeline & Architecture Specs -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h2 class="card-title">Analysis Pipeline & Detection Architecture</h2>
+    </div>
+    <div style="font-size: 0.88rem; line-height: 1.6;">
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: var(--bg-alt); border-radius: 6px; border: 1px solid var(--border-light);">
+          <div>
+            <strong>Multi-Language AST Engines</strong>
+            <div style="font-size: 0.76rem; color: var(--text-muted);">Python, C, C++, Java, JavaScript</div>
+          </div>
+          <span class="badge badge-status active">5 Active</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: var(--bg-alt); border-radius: 6px; border: 1px solid var(--border-light);">
+          <div>
+            <strong>Winnowing Fingerprinting</strong>
+            <div style="font-size: 0.76rem; color: var(--text-muted);">Normalized k-gram sliding window hashing</div>
+          </div>
+          <span class="badge badge-status active">Enabled</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: var(--bg-alt); border-radius: 6px; border: 1px solid var(--border-light);">
+          <div>
+            <strong>Historical Repository Screening</strong>
+            <div style="font-size: 0.76rem; color: var(--text-muted);">Cross-year benchmark comparison archive</div>
+          </div>
+          <span class="badge badge-status">{{ historical_count }} Records</span>
+        </div>
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-muted);">
+        Access specific workflows via the sidebar: <strong>Submit Code</strong>, <strong>Historical Submissions</strong>, <strong>Results</strong>, <strong>Reports</strong>, and <strong>Assignments</strong>.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

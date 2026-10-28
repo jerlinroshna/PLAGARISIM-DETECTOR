@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}My Submissions{% endblock %}
+{% block breadcrumb_page %}My Submissions{% endblock %}
+{% block page_title %}My Submissions{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="subs-page-header">
+  <div>
+    <h1 class="subs-page-title">My Submissions</h1>
+    <p class="subs-page-desc">Track and review all your code submissions and academic integrity screening results.</p>
+  </div>
+  <div class="subs-count-pill">
+    <span class="subs-count-label">Total Submissions</span>
+    <span class="subs-count-num">{{ total_count }}</span>
+  </div>
+</div>
+
+<!-- 4 Compact Summary Cards -->
+<div class="subs-summary-grid">
+  <div class="subs-summary-card">
+    <div class="subs-summary-icon blue">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+    </div>
+    <div>
+      <div class="subs-summary-num">{{ total_count }}</div>
+      <div class="subs-summary-label">Total Submissions</div>
+    </div>
+  </div>
+
+  <div class="subs-summary-card">
+    <div class="subs-summary-icon green">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    </div>
+    <div>
+      <div class="subs-summary-num">{{ completed_count }}</div>
+      <div class="subs-summary-label">Analyzed</div>
+    </div>
+  </div>
+
+  <div class="subs-summary-card">
+    <div class="subs-summary-icon amber">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+    </div>
+    <div>
+      <div class="subs-summary-num">{{ pending_count }}</div>
+      <div class="subs-summary-label">Pending</div>
+    </div>
+  </div>
+
+  <div class="subs-summary-card">
+    <div class="subs-summary-icon indigo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+    </div>
+    <div>
+      <div class="subs-summary-num">{{ reviewed_count }}</div>
+      <div class="subs-summary-label">Reviewed</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Table Card with Tabs and Filter -->
+<div class="card" style="padding: 24px;">
+  <!-- Status Tabs -->
+  <div class="subs-tabs-row">
+    <a href="{{ url_for('student.submissions', q=q, assignment=filter_asgn, language=filter_lang, similarity=filter_band) }}"
+       class="subs-tab-btn {% if not filter_status %}active{% endif %}">
+      All {{ total_count }}
+    </a>
+    <a href="{{ url_for('student.submissions', status='completed', q=q, assignment=filter_asgn, language=filter_lang, similarity=filter_band) }}"
+       class="subs-tab-btn {% if filter_status == 'completed' %}active{% endif %}">
+      Completed {{ completed_count }}
+    </a>
+    <a href="{{ url_for('student.submissions', status='pending', q=q, assignment=filter_asgn, language=filter_lang, similarity=filter_band) }}"
+       class="subs-tab-btn {% if filter_status == 'pending' %}active{% endif %}" style="{% if pending_count == 0 %}opacity: 0.75;{% endif %}">
+      Pending {{ pending_count }}
+    </a>
+    <a href="{{ url_for('student.submissions', status='reviewed', q=q, assignment=filter_asgn, language=filter_lang, similarity=filter_band) }}"
+       class="subs-tab-btn {% if filter_status == 'reviewed' %}active{% endif %}">
+      Reviewed {{ reviewed_count }}
+    </a>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <form method="GET" action="{{ url_for('student.submissions') }}" style="margin-bottom: 24px;">
+    {% if filter_status %}
+      <input type="hidden" name="status" value="{{ filter_status }}">
+    {% endif %}
+
+    <div class="subs-filter-form">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search assignment, subject, or filename..."
+             class="subs-form-input">
+
+      <select name="assignment" class="subs-form-select">
+        <option value="">All Assignments</option>
+        {% for a in assignments %}
+          <option value="{{ a.id }}" {% if filter_asgn == a.id|string %}selected{% endif %}>{{ a.title }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="language" class="subs-form-select">
+        <option value="">All Languages</option>
+        {% for l_key, l_name in languages.items() %}
+          <option value="{{ l_key }}" {% if filter_lang == l_key %}selected{% endif %}>{{ l_name }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="similarity" class="subs-form-select">
+        <option value="">Any Similarity</option>
+        <option value="Low Similarity" {% if filter_band == 'Low Similarity' %}selected{% endif %}>Low (< 30%)</option>
+        <option value="Medium Similarity" {% if filter_band == 'Medium Similarity' %}selected{% endif %}>Medium (30%–69%)</option>
+        <option value="High Similarity" {% if filter_band == 'High Similarity' %}selected{% endif %}>High (&ge; 70%)</option>
+      </select>
+
+      <div style="display: flex; gap: 6px;">
+        <button type="submit" class="subs-filter-submit-btn">Filter</button>
+        {% if q or filter_asgn or filter_lang or filter_status or filter_band %}
+          <a href="{{ url_for('student.submissions') }}" class="btn btn-secondary" style="height: 42px; display: inline-flex; align-items: center; padding: 0 14px; font-size: 0.86rem; border-radius: 8px;">Reset</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+
+  <!-- 6-Column Primary Table (Desktop >= 860px) -->
+  {% if submissions and submissions|length > 0 %}
+    <div class="subs-desktop-table-container">
+      <table class="subs-table">
+        <thead>
+          <tr>
+            <th class="col-sub-assignment">Assignment</th>
+            <th class="col-sub-language">Language</th>
+            <th class="col-sub-submitted">Submitted</th>
+            <th class="col-sub-similarity">Similarity</th>
+            <th class="col-sub-review">Review Status</th>
+            <th class="col-sub-action">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sub in submissions %}
+            {% set lang_raw = (sub.programming_language or '')|upper %}
+            {% set is_unsupported = 'UNSUPPORTED' in lang_raw or lang_raw == '' %}
+            {% set is_unmatched = 'UNMATCHED' in (sub.assignment_title or '')|upper %}
+
+            {% set score = sub.combined_similarity_score %}
+            {% set sim_cls = 'low' %}
+            {% if score is not none %}
+              {% if score >= 70.0 %}{% set sim_cls = 'high' %}
+              {% elif score >= 30.0 %}{% set sim_cls = 'medium' %}
+              {% endif %}
+            {% endif %}
+
+            {% set rev_status = sub.review_status or 'Pending Review' %}
+            {% set rev_cls = 'pending' %}
+            {% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+              {% set rev_cls = 'reviewed' %}
+            {% elif rev_status == 'Further Investigation Required' %}
+              {% set rev_cls = 'investigate' %}
+            {% endif %}
+
+            <tr>
+              <!-- 1. Assignment Cell (38% space) with ID & Filename inside -->
+              <td class="col-sub-assignment">
+                {% if is_unmatched %}
+                  <span class="sub-test-tag">Test / Unmatched Submission</span>
+                  <div class="sub-asgn-title">Unmatched Assignment</div>
+                  <div class="sub-asgn-desc">{{ sub.title }} &bull; {{ sub.subject }}</div>
+                  <div class="sub-asgn-meta">#{{ sub.id }} &bull; {{ sub.source_filename }}</div>
+                {% else %}
+                  <div class="sub-asgn-title" title="{{ sub.assignment_title }}">
+                    {{ sub.assignment_title }}
+                  </div>
+                  <div class="sub-asgn-desc" title="{{ sub.title }} &bull; {{ sub.subject }}">
+                    {{ sub.title }} &bull; {{ sub.subject }}
+                  </div>
+                  <div class="sub-asgn-meta">#{{ sub.id }} &bull; {{ sub.source_filename }}</div>
+                {% endif %}
+              </td>
+
+              <!-- 2. Language Column (10%) -->
+              <td class="col-sub-language">
+                {% if is_unsupported %}
+                  <span class="lang-badge-compact unsupported">Unsupported</span>
+                {% elif sub.programming_language|lower == 'javascript' or sub.programming_language|lower == 'js' %}
+                  <span class="lang-badge-compact">JavaScript</span>
+                {% elif sub.programming_language|lower == 'python' %}
+                  <span class="lang-badge-compact">Python</span>
+                {% elif sub.programming_language|lower == 'cpp' %}
+                  <span class="lang-badge-compact">C++</span>
+                {% elif sub.programming_language|lower == 'java' %}
+                  <span class="lang-badge-compact">Java</span>
+                {% elif sub.programming_language|lower == 'c' %}
+                  <span class="lang-badge-compact">C</span>
+                {% else %}
+                  <span class="lang-badge-compact">{{ sub.programming_language|capitalize }}</span>
+                {% endif %}
+              </td>
+
+              <!-- 3. Submitted Column (14%) -->
+              <td class="col-sub-submitted">
+                <div class="sub-date-primary">{{ sub.submitted_at[:10] }}</div>
+                <div class="sub-time-secondary">{{ sub.submitted_at[11:16] }}</div>
+              </td>
+
+              <!-- 4. Similarity Column (15%) -->
+              <td class="col-sub-similarity">
+                {% if score is not none %}
+                  <div style="font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.1; margin-bottom: 4px;">
+                    {{ score }}%
+                  </div>
+                  <span class="sim-badge-compact {{ sim_cls }}">
+                    {{ sub.similarity_label }}
+                  </span>
+                {% else %}
+                  <span class="sim-badge-compact" style="background: #f1f5f9; color: #64748b;">
+                    In Queue
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- 5. Review Status Column (13% - Combined Analysis Status + Faculty Review) -->
+              <td class="col-sub-review">
+                <div class="sub-review-cell">
+                  <div class="sub-analysis-status">
+                    <span class="sub-analysis-dot {% if sub.analysis_status == 'completed' %}completed{% else %}pending{% endif %}"></span>
+                    <span>Analysis {{ sub.analysis_status|capitalize }}</span>
+                  </div>
+                  <span class="review-badge-compact {{ rev_cls }}">
+                    {% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+                      &#10003; Reviewed
+                    {% elif rev_status == 'Further Investigation Required' %}
+                      &#9888; Further Investigation
+                    {% else %}
+                      &#9717; Pending Review
+                    {% endif %}
+                  </span>
+                </div>
+              </td>
+
+              <!-- 6. Action Column (10%) -->
+              <td class="col-sub-action">
+                <a href="{{ url_for('student.submission_detail', sub_id=sub.id) }}" class="action-btn-compact">
+                  View Result &rarr;
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Submissions Cards (< 860px) -->
+    <div class="subs-mobile-cards-container">
+      {% for sub in submissions %}
+        {% set lang_raw = (sub.programming_language or '')|upper %}
+        {% set is_unsupported = 'UNSUPPORTED' in lang_raw or lang_raw == '' %}
+        {% set is_unmatched = 'UNMATCHED' in (sub.assignment_title or '')|upper %}
+
+        {% set score = sub.combined_similarity_score %}
+        {% set sim_cls = 'low' %}
+        {% if score is not none %}
+          {% if score >= 70.0 %}{% set sim_cls = 'high' %}
+          {% elif score >= 30.0 %}{% set sim_cls = 'medium' %}
+          {% endif %}
+        {% endif %}
+
+        {% set rev_status = sub.review_status or 'Pending Review' %}
+        {% set rev_cls = 'pending' %}
+        {% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+          {% set rev_cls = 'reviewed' %}
+        {% elif rev_status == 'Further Investigation Required' %}
+          {% set rev_cls = 'investigate' %}
+        {% endif %}
+
+        <div class="mobile-sub-card">
+          <div class="mobile-sub-header">
+            <div>
+              {% if is_unmatched %}
+                <span class="sub-test-tag">Test / Unmatched</span>
+                <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a; margin: 2px 0;">Unmatched Assignment</div>
+              {% else %}
+                <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px;">
+                  {{ sub.assignment_title }}
+                </div>
+              {% endif %}
+              <div class="mobile-sub-meta">
+                {{ sub.title }} &bull; {{ sub.subject }}
+              </div>
+              <div class="sub-asgn-meta" style="margin-top: 2px;">
+                #{{ sub.id }} &bull; {{ sub.source_filename }}
+              </div>
+            </div>
+            {% if is_unsupported %}
+              <span class="lang-badge-compact unsupported">Unsupported</span>
+            {% elif sub.programming_language|lower == 'javascript' or sub.programming_language|lower == 'js' %}
+              <span class="lang-badge-compact">JavaScript</span>
+            {% elif sub.programming_language|lower == 'python' %}
+              <span class="lang-badge-compact">Python</span>
+            {% elif sub.programming_language|lower == 'cpp' %}
+              <span class="lang-badge-compact">C++</span>
+            {% elif sub.programming_language|lower == 'java' %}
+              <span class="lang-badge-compact">Java</span>
+            {% elif sub.programming_language|lower == 'c' %}
+              <span class="lang-badge-compact">C</span>
+            {% else %}
+              <span class="lang-badge-compact">{{ sub.programming_language|capitalize }}</span>
+            {% endif %}
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+            <span>Submitted: <strong style="color: #1e293b;">{{ sub.submitted_at[:10] }} &bull; {{ sub.submitted_at[11:16] }}</strong></span>
+            <span style="display: flex; align-items: center; gap: 4px;">
+              <span class="sub-analysis-dot {% if sub.analysis_status == 'completed' %}completed{% else %}pending{% endif %}"></span>
+              {{ sub.analysis_status|capitalize }}
+            </span>
+          </div>
+
+          <div class="mobile-sub-badges">
+            <div>
+              <span style="font-size: 0.72rem; color: #64748b; display: block; margin-bottom: 2px;">Similarity:</span>
+              {% if score is not none %}
+                <span class="sim-badge-compact {{ sim_cls }}">
+                  {{ score }}% &bull; {{ sub.similarity_label }}
+                </span>
+              {% else %}
+                <span class="sim-badge-compact" style="background: #f1f5f9; color: #64748b;">In Queue</span>
+              {% endif %}
+            </div>
+
+            <div>
+              <span style="font-size: 0.72rem; color: #64748b; display: block; margin-bottom: 2px;">Faculty Review:</span>
+              <span class="review-badge-compact {{ rev_cls }}">
+                {{ rev_status }}
+              </span>
+            </div>
+          </div>
+
+          <div style="margin-top: 4px;">
+            <a href="{{ url_for('student.submission_detail', sub_id=sub.id) }}" class="action-btn-compact" style="width: 100%;">
+              View Result &rarr;
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state-card">
+      <div class="empty-state-icon">&#128194;</div>
+      <div class="empty-state-title">No submissions found</div>
+      <div class="empty-state-desc">
+        {% if q or filter_asgn or filter_lang or filter_status or filter_band %}
+          No submissions matched your search filters. Try resetting the filter criteria.
+        {% else %}
+          You have not submitted any assignments yet. Submit your first code file to begin automated integrity analysis.
+        {% endif %}
+      </div>
+      <a href="{{ url_for('student.submit') }}" class="btn btn-primary">+ Submit Code</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

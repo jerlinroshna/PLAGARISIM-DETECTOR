@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C / C++ build outputs
+*.o
+*.obj
+*.exe
+*.out
+
+# Database & Runtime data
+data/*.db
+data/*.sqlite3
+data/demo_accounts.csv
+
+# Uploaded submissions & historical archives (Runtime user uploads)
+uploads/submissions/*
+!uploads/submissions/.gitkeep
+uploads/historical/*
+!uploads/historical/.gitkeep
+
+# Environments & Secrets
+.env
+.env.local
+.venv/
+env/
+venv/
+ENV/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.workspace.layout
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Code - Faculty Screening{% endblock %}
+{% block page_title %}Submit Code for Plagiarism Screening{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Instructor Code Screening & Verification</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
+        Upload or paste source code to test against the historical code repository.
+      </p>
+    </div>
+  </div>
+
+  <form action="{{ url_for('faculty.submit') }}" method="POST" enctype="multipart/form-data">
+    <!-- Assignment Selection -->
+    <div class="form-group">
+      <label class="form-label" for="assignment_id">Target Assignment *</label>
+      <select class="form-control" name="assignment_id" id="assignment_id" required>
+        <option value="">-- Choose Course Assignment --</option>
+        {% for asgn in assignments %}
+          <option value="{{ asgn.id }}">
+            {{ asgn.title }} [{{ asgn.subject }}] (Allowed: {{ asgn.allowed_languages }})
+          </option>
+        {% endfor %}
+      </select>
+      <div class="form-help">Select the course assignment context for similarity comparison.</div>
+    </div>
+
+    <!-- Submission Title -->
+    <div class="form-group">
+      <label class="form-label" for="title">Submission Reference / Title (Optional)</label>
+      <input type="text" class="form-control" name="title" id="title" placeholder="e.g. Instructor Benchmark Test / Suspected Sample">
+    </div>
+
+    <!-- Programming Language -->
+    <div class="form-group">
+      <label class="form-label" for="programming_language">Programming Language *</label>
+      <select class="form-control" name="programming_language" id="programming_language" required>
+        <option value="auto">Auto-detect from file extension</option>
+        {% for lang_key, lang_name in languages.items() %}
+          <option value="{{ lang_key }}">{{ lang_name }}</option>
+        {% endfor %}
+      </select>
+      <div class="form-help">Supported AST engines: Python, C, C++, Java, JavaScript.</div>
+    </div>
+
+    <!-- File Upload Option -->
+    <div class="form-group upload-drop-zone">
+      <label class="form-label" for="code_file">Upload Source Code File</label>
+      <input type="file" class="form-control" name="code_file" id="code_file" accept=".py,.java,.c,.cpp,.cc,.js">
+      <div class="form-help">Accepted formats: .py, .java, .c, .cpp, .js (Max 5 MB).</div>
+    </div>
+
+    <!-- Alternative: Paste Code -->
+    <div class="form-group" style="margin-top: 20px;">
+      <label class="form-label" for="code_text">Or Paste Source Code Directly</label>
+      <textarea class="form-control code-editor" name="code_text" id="code_text" rows="12" 
+                placeholder="// Paste source code here for instant AST and text comparison..."></textarea>
+      <div class="form-help">Tab key indentation supported inside the editor.</div>
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: 24px;">
+      <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">
+        Run Historical Plagiarism Screening
+      </button>
+      <a href="{{ url_for('faculty.dashboard') }}" class="btn btn-secondary">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

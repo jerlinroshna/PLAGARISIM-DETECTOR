@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile{% endblock %}
+{% block breadcrumb_page %}Profile{% endblock %}
+{% block page_title %}Student Institutional Profile{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+  <!-- Profile Header Card -->
+  <div class="card" style="margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; gap: 24px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+      <div style="width: 72px; height: 72px; border-radius: 12px; background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 700; flex-shrink: 0; box-shadow: 0 4px 10px rgba(37,99,235,0.2);">
+        {{ user.username[:3] }}
+      </div>
+      <div>
+        <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 4px;">{{ user.full_name }}</h2>
+        <div style="font-size: 0.86rem; color: #64748b; margin-bottom: 6px;">
+          Roll Number: <strong style="color: #0f172a;">{{ user.username }}</strong> &bull; Department of Information Technology
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <span class="badge badge-status active">Account Active</span>
+          <span class="badge" style="background: #eff6ff; color: #1e40af;">Student Enrolled</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Institutional Academic Details -->
+    <div style="padding-top: 20px;">
+      <h3 style="font-size: 0.95rem; font-weight: 600; color: #334155; margin-bottom: 12px;">Institutional Credentials</h3>
+      <table style="width: 100%; font-size: 0.88rem; line-height: 2.2;">
+        <tr>
+          <td style="color: #64748b; width: 200px;">Internal Student ID:</td>
+          <td><strong>#{{ user.id }}</strong></td>
+        </tr>
+        <tr>
+          <td style="color: #64748b;">Roll / Username:</td>
+          <td><code>{{ user.username }}</code></td>
+        </tr>
+        <tr>
+          <td style="color: #64748b;">Department:</td>
+          <td>Department of Information Technology</td>
+        </tr>
+        <tr>
+          <td style="color: #64748b;">Academic Session:</td>
+          <td>2024–2025 (Active Term)</td>
+        </tr>
+        <tr>
+          <td style="color: #64748b;">Institutional Email:</td>
+          <td>{{ user.email or user.username.lower() ~ '@college.edu' }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Programming Languages Support -->
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+      <h3 class="card-title">Enrolled Programming Languages & Analyzers</h3>
+      <span class="badge" style="background: #ecfdf5; color: #065f46;">5 Languages Configured</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-top: 8px;">
+      <div style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+        <code style="font-size: 0.95rem; font-weight: 700; color: #2563eb;">PYTHON</code>
+        <div style="font-size: 0.72rem; color: #64748b; margin-top: 4px;"><code>.py</code> (ast)</div>
+      </div>
+      <div style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+        <code style="font-size: 0.95rem; font-weight: 700; color: #2563eb;">JAVA</code>
+        <div style="font-size: 0.72rem; color: #64748b; margin-top: 4px;"><code>.java</code> (javalang)</div>
+      </div>
+      <div style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+        <code style="font-size: 0.95rem; font-weight: 700; color: #2563eb;">C / C++</code>
+        <div style="font-size: 0.72rem; color: #64748b; margin-top: 4px;"><code>.c, .cpp</code> (cparser)</div>
+      </div>
+      <div style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+        <code style="font-size: 0.95rem; font-weight: 700; color: #2563eb;">JAVASCRIPT</code>
+        <div style="font-size: 0.72rem; color: #64748b; margin-top: 4px;"><code>.js</code> (esprima)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity & Privacy Safeguards -->
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+      <h3 class="card-title">Activity & Privacy Status</h3>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 0.86rem; line-height: 1.8;">
+      <div>
+        <div style="color: #64748b;">Total Submissions: <strong>{{ stats.total or 0 }}</strong></div>
+        <div style="color: #64748b;">Completed Screenings: <strong>{{ stats.completed or 0 }}</strong></div>
+        <div style="color: #64748b;">Pending in Queue: <strong>{{ stats.pending or 0 }}</strong></div>
+      </div>
+      <div>
+        <div style="color: #10b981;">&#10003; Student Data Isolation Active</div>
+        <div style="color: #10b981;">&#10003; Role-Based Authorization Enforced</div>
+        <div style="color: #10b981;">&#10003; Execution Safety Sandbox Active</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary">&larr; Return to Dashboard</a>
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline" style="color: #ef4444; border-color: #fca5a5;">Logout</a>
+  </div>
+</div>
+{% endblock %}

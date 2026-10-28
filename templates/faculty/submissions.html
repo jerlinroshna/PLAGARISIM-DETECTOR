@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Results - Review Submissions{% endblock %}
+{% block page_title %}Student Submissions & Plagiarism Results{% endblock %}
+
+{% block content %}
+<div class="card">
+  <!-- Search & Filter Bar -->
+  <form method="GET" action="{{ url_for('faculty.submissions') }}" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; align-items: flex-end;">
+    <div style="flex: 2; min-width: 180px;">
+      <label class="form-label" style="font-size: 0.78rem;">Search Student</label>
+      <input type="text" class="form-control" name="search" value="{{ search_user }}" placeholder="Search username or name...">
+    </div>
+
+    <div style="flex: 2; min-width: 180px;">
+      <label class="form-label" style="font-size: 0.78rem;">Filter by Assignment</label>
+      <select class="form-control" name="assignment">
+        <option value="">All Assignments</option>
+        {% for a in assignments %}
+          <option value="{{ a.id }}" {% if filter_asgn == a.id|string %}selected{% endif %}>{{ a.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 130px;">
+      <label class="form-label" style="font-size: 0.78rem;">Language</label>
+      <select class="form-control" name="language">
+        <option value="">All Languages</option>
+        <option value="python" {% if filter_lang == 'python' %}selected{% endif %}>Python</option>
+        <option value="c" {% if filter_lang == 'c' %}selected{% endif %}>C</option>
+        <option value="cpp" {% if filter_lang == 'cpp' %}selected{% endif %}>C++</option>
+        <option value="java" {% if filter_lang == 'java' %}selected{% endif %}>Java</option>
+        <option value="javascript" {% if filter_lang == 'javascript' %}selected{% endif %}>JavaScript</option>
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 140px;">
+      <label class="form-label" style="font-size: 0.78rem;">Similarity Level</label>
+      <select class="form-control" name="similarity">
+        <option value="">All Levels</option>
+        <option value="High Similarity" {% if filter_label == 'High Similarity' %}selected{% endif %}>High (&ge; 70%)</option>
+        <option value="Medium Similarity" {% if filter_label == 'Medium Similarity' %}selected{% endif %}>Medium (30-69%)</option>
+        <option value="Low Similarity" {% if filter_label == 'Low Similarity' %}selected{% endif %}>Low (&lt; 30%)</option>
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 150px;">
+      <label class="form-label" style="font-size: 0.78rem;">Review Status</label>
+      <select class="form-control" name="review">
+        <option value="">All Statuses</option>
+        <option value="Pending Review" {% if filter_review == 'Pending Review' %}selected{% endif %}>Pending Review</option>
+        <option value="Reviewed" {% if filter_review == 'Reviewed' %}selected{% endif %}>Reviewed</option>
+        <option value="Further Investigation Required" {% if filter_review == 'Further Investigation Required' %}selected{% endif %}>Investigation Req.</option>
+        <option value="No Concern Identified" {% if filter_review == 'No Concern Identified' %}selected{% endif %}>No Concern</option>
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <button type="submit" class="btn btn-primary">Apply Filters</button>
+      <a href="{{ url_for('faculty.submissions') }}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+
+  <!-- Submissions Table -->
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Student</th>
+          <th>Assignment Name</th>
+          <th>Language</th>
+          <th>Submitted Date</th>
+          <th>Similarity Score</th>
+          <th>Review Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if submissions %}
+          {% for sub in submissions %}
+          <tr>
+            <td><strong>#{{ sub.id }}</strong></td>
+            <td>
+              <strong>{{ sub.full_name }}</strong>
+              <div style="font-size: 0.76rem; color: var(--text-muted);">{{ sub.username }}</div>
+            </td>
+            <td>
+              <div>{{ sub.assignment_title }}</div>
+              <small style="color: var(--text-muted);">{{ sub.subject }}</small>
+            </td>
+            <td><code>{{ sub.programming_language|upper }}</code></td>
+            <td style="font-size: 0.82rem;">{{ sub.submitted_at }}</td>
+            <td>
+              {% if sub.combined_similarity_score is not none %}
+                <span class="badge {% if sub.similarity_label == 'High Similarity' %}badge-high{% elif sub.similarity_label == 'Medium Similarity' %}badge-medium{% else %}badge-low{% endif %}">
+                  {{ sub.similarity_label }} ({{ sub.combined_similarity_score }}%)
+                </span>
+              {% else %}
+                <span class="badge badge-status">Processing</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge badge-status {% if sub.review_status == 'Reviewed' or sub.review_status == 'No Concern Identified' %}active{% elif sub.review_status == 'Further Investigation Required' %}investigate{% else %}pending{% endif %}">
+                {{ sub.review_status or 'Pending Review' }}
+              </span>
+            </td>
+            <td>
+              <a href="{{ url_for('faculty.analysis_detail', sub_id=sub.id) }}" class="btn btn-sm btn-primary">
+                Inspect & Review
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
+              No submissions match the current filter criteria.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

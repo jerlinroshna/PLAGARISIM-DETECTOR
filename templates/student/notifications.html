@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+{% block breadcrumb_page %}Notifications{% endblock %}
+{% block page_title %}Student Notifications Center{% endblock %}
+
+{% block content %}
+<div class="notif-center-wrapper">
+  <!-- Header Banner -->
+  <div class="notif-header-banner">
+    <div>
+      <h2 class="notif-header-title">Notifications Center</h2>
+      <p class="notif-header-subtitle">
+        Stay updated on automated screening progress, faculty evaluations, and assignment deadlines.
+      </p>
+    </div>
+
+    <div class="notif-header-actions">
+      {% if unread_count and unread_count > 0 %}
+        <div class="notif-unread-count-pill">
+          <span class="notif-unread-dot"></span>
+          <span>{{ unread_count }} Unread</span>
+        </div>
+        <form action="{{ url_for('student.mark_all_notifications_read') }}" method="POST" style="margin: 0;">
+          <button type="submit" class="btn btn-outline" style="font-size: 0.84rem; height: 38px; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Mark All as Read
+          </button>
+        </form>
+      {% else %}
+        <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.82rem; padding: 6px 12px; border-radius: 9999px;">
+          &#10003; All Caught Up
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if notifications and notifications|length > 0 %}
+    <!-- Filter Tabs & Quick Search -->
+    <div class="notif-filter-bar">
+      <div class="notif-tab-group" id="notifTabs">
+        <button type="button" class="notif-tab-btn active" data-filter="all">
+          All <span class="notif-tab-counter">{{ notifications|length }}</span>
+        </button>
+        <button type="button" class="notif-tab-btn" data-filter="unread">
+          Unread <span class="notif-tab-counter">{{ unread_count }}</span>
+        </button>
+        <button type="button" class="notif-tab-btn" data-filter="submission">
+          Screenings
+        </button>
+        <button type="button" class="notif-tab-btn" data-filter="assignment">
+          Assignments
+        </button>
+        <button type="button" class="notif-tab-btn" data-filter="system">
+          System &amp; Info
+        </button>
+      </div>
+
+      <div>
+        <input type="text" id="notifSearchInput" class="notif-search-input" placeholder="Search notifications...">
+      </div>
+    </div>
+
+    <!-- Notification Cards List -->
+    <div class="notif-list-container" id="notifList">
+      {% for notif in notifications %}
+        {% set cat = notif.category or 'info' %}
+        {% set is_unread = not notif.is_read %}
+
+        <div class="notif-card {% if is_unread %}unread{% endif %}"
+             data-category="{{ cat }}"
+             data-read="{{ 'unread' if is_unread else 'read' }}"
+             data-title="{{ notif.title|lower }}"
+             data-message="{{ notif.message|lower }}">
+          
+          <div class="notif-card-left">
+            <!-- Sleek Category Avatar Icon -->
+            <div class="notif-avatar {{ cat }}">
+              {% if cat == 'submission' %}
+                <!-- Code / Screening SVG -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+              {% elif cat == 'assignment' %}
+                <!-- Assignment / Clipboard SVG -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+              {% elif cat == 'system' %}
+                <!-- Shield / Cog SVG -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              {% else %}
+                <!-- Bell / Info SVG -->
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+              {% endif %}
+            </div>
+
+            <!-- Content Area -->
+            <div class="notif-content">
+              <div class="notif-meta-row">
+                <span class="notif-cat-badge {{ cat }}">
+                  {% if cat == 'submission' %}Screening
+                  {% elif cat == 'assignment' %}Assignment
+                  {% elif cat == 'system' %}System
+                  {% else %}Announcement{% endif %}
+                </span>
+
+                {% if is_unread %}
+                  <span class="notif-new-badge">NEW</span>
+                {% endif %}
+
+                <span class="notif-time">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  {{ notif.created_at[:16] }}
+                </span>
+              </div>
+
+              <h3 class="notif-title">{{ notif.title }}</h3>
+              <p class="notif-message">{{ notif.message }}</p>
+            </div>
+          </div>
+
+          <!-- Actions Cluster -->
+          <div class="notif-card-right">
+            {% if notif.link_url %}
+              <a href="{{ notif.link_url }}" class="notif-action-btn">
+                <span>View Details</span>
+                <span style="font-size: 14px;">&rarr;</span>
+              </a>
+            {% endif %}
+
+            {% if is_unread %}
+              <form action="{{ url_for('student.mark_notification_read', notif_id=notif.id) }}" method="POST" style="margin: 0;">
+                <button type="submit" class="notif-mark-btn">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Mark as read
+                </button>
+              </form>
+            {% else %}
+              <span class="notif-read-status">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #10b981;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Read
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Zero Results on Filtering Indicator -->
+    <div id="notifNoResults" style="display: none; padding: 48px 20px; text-align: center; background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 12px; margin-top: 12px;">
+      <div style="font-size: 2rem; margin-bottom: 8px;">&#128269;</div>
+      <div style="font-weight: 600; font-size: 1rem; color: #0f172a; margin-bottom: 4px;">No matching notifications</div>
+      <div style="font-size: 0.85rem; color: #64748b;">Try adjusting your search query or selecting a different filter tab.</div>
+    </div>
+
+  {% else %}
+    <div class="empty-state-card">
+      <div class="empty-state-icon">&#128276;</div>
+      <div class="empty-state-title">You're all caught up!</div>
+      <div class="empty-state-desc">
+        There are no notifications at this time. Screening progress and instructor reviews will appear here.
+      </div>
+      <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary">Return to Dashboard</a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Interactive Client Filter & Search Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const tabs = document.querySelectorAll('#notifTabs .notif-tab-btn');
+  const cards = document.querySelectorAll('#notifList .notif-card');
+  const searchInput = document.getElementById('notifSearchInput');
+  const noResults = document.getElementById('notifNoResults');
+
+  let currentFilter = 'all';
+  let currentSearch = '';
+
+  function applyFilters() {
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+      const cat = card.getAttribute('data-category');
+      const readState = card.getAttribute('data-read');
+      const title = card.getAttribute('data-title') || '';
+      const msg = card.getAttribute('data-message') || '';
+
+      // Tab check
+      let matchesTab = false;
+      if (currentFilter === 'all') {
+        matchesTab = true;
+      } else if (currentFilter === 'unread') {
+        matchesTab = (readState === 'unread');
+      } else if (currentFilter === 'submission') {
+        matchesTab = (cat === 'submission');
+      } else if (currentFilter === 'assignment') {
+        matchesTab = (cat === 'assignment');
+      } else if (currentFilter === 'system') {
+        matchesTab = (cat === 'system' || cat === 'info');
+      }
+
+      // Search check
+      let matchesSearch = true;
+      if (currentSearch.trim() !== '') {
+        const query = currentSearch.toLowerCase().trim();
+        matchesSearch = title.includes(query) || msg.includes(query);
+      }
+
+      if (matchesTab && matchesSearch) {
+        card.style.display = 'flex';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    if (noResults) {
+      noResults.style.display = (visibleCount === 0) ? 'block' : 'none';
+    }
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      tabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      currentFilter = this.getAttribute('data-filter');
+      applyFilters();
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+      currentSearch = e.target.value;
+      applyFilters();
+    });
+  }
+});
+</script>
+{% endblock %}
+

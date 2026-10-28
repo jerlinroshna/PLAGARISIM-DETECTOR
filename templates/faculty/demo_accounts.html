@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Demo Accounts Reference{% endblock %}
+{% block page_title %}Development & Evaluation Demo Accounts{% endblock %}
+
+{% block content %}
+<!-- Notice Banner -->
+<div class="card" style="background-color: #f8fafc; border-left: 4px solid var(--accent); padding: 16px 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h3 style="font-size: 1.05rem; color: var(--primary);">Pre-seeded Development Demo Accounts</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
+        These accounts are initialized automatically for local testing and demonstration. Student passwords are <code>Student@123</code>, Faculty passwords are <code>Faculty@123</code>.
+      </p>
+    </div>
+    <a href="{{ url_for('faculty.download_demo_accounts_csv') }}" class="btn btn-primary">
+      &#128190; Download demo_accounts.csv
+    </a>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+  <!-- Student Demo Accounts (60) -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Student Accounts (STU001 &ndash; STU060)</h2>
+      <span class="badge badge-status">{{ students|length }} Accounts</span>
+    </div>
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+      Common Demo Password: <code>Student@123</code>
+    </p>
+
+    <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Demo Name</th>
+            <th>Role</th>
+            <th>Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in students %}
+          <tr>
+            <td><strong>{{ s.username }}</strong></td>
+            <td>{{ s.full_name }}</td>
+            <td><span class="badge badge-status">{{ s.role }}</span></td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">{{ s.email }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Faculty Demo Accounts (20) -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Faculty Accounts (FAC001 &ndash; FAC020)</h2>
+      <span class="badge badge-status">{{ faculty|length }} Accounts</span>
+    </div>
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+      Common Demo Password: <code>Faculty@123</code>
+    </p>
+
+    <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Demo Name</th>
+            <th>Role</th>
+            <th>Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in faculty %}
+          <tr>
+            <td><strong>{{ f.username }}</strong></td>
+            <td>{{ f.full_name }}</td>
+            <td><span class="badge badge-status" style="background-color: #dbeafe; color: #1e40af;">{{ f.role }}</span></td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">{{ f.email }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

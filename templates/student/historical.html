@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Historical References{% endblock %}
+{% block breadcrumb_page %}Historical References{% endblock %}
+{% block page_title %}Authorized Historical Reference Implementations{% endblock %}
+
+{% block content %}
+<!-- Header Intro Card -->
+<div class="card" style="margin-bottom: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <div>
+      <h2 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
+        Authorized Historical References
+      </h2>
+      <p style="font-size: 0.86rem; color: #64748b; margin: 0;">
+        Browse instructor-approved reference implementations made available for academic study and algorithmic comparison.
+      </p>
+    </div>
+    <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 600; padding: 6px 12px;">
+      &#10003; Instructor Approved
+    </span>
+  </div>
+</div>
+
+<!-- Filter Controls -->
+<div class="card" style="margin-bottom: 20px; padding: 16px;">
+  <form method="GET" action="{{ url_for('student.historical') }}" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; align-items: center;">
+    <input type="text" name="search" value="{{ search_q }}" placeholder="Search assignment or subject..." class="form-control" style="font-size: 0.86rem; padding: 8px 12px; border-radius: 6px;">
+
+    <select name="year" class="form-control" style="font-size: 0.86rem; padding: 8px 12px; border-radius: 6px;">
+      <option value="">All Academic Years</option>
+      {% for y in years %}
+        <option value="{{ y.academic_year }}" {% if filter_year == y.academic_year %}selected{% endif %}>
+          AY {{ y.academic_year }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <select name="language" class="form-control" style="font-size: 0.86rem; padding: 8px 12px; border-radius: 6px;">
+      <option value="">All Languages</option>
+      {% for l_key, l_name in languages.items() %}
+        <option value="{{ l_key }}" {% if filter_lang == l_key %}selected{% endif %}>{{ l_name }}</option>
+      {% endfor %}
+    </select>
+
+    <div style="display: flex; gap: 6px;">
+      <button type="submit" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.86rem;">Filter</button>
+      {% if search_q or filter_year or filter_lang %}
+        <a href="{{ url_for('student.historical') }}" class="btn btn-secondary" style="padding: 8px 12px; font-size: 0.86rem;">Reset</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- References Grid / Cards -->
+{% if records and records|length > 0 %}
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px;">
+    {% for r in records %}
+      <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 600;">
+              AY {{ r.academic_year }}
+            </span>
+            <span class="badge" style="background: #f1f5f9; color: #334155; font-family: 'JetBrains Mono', monospace; font-size: 0.74rem;">
+              {{ r.programming_language|upper }}
+            </span>
+          </div>
+
+          <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
+            {{ r.assignment_name }}
+          </h3>
+          <div style="font-size: 0.8rem; color: #475569; margin-bottom: 10px;">
+            Subject: <strong>{{ r.subject }}</strong>
+          </div>
+
+          <div style="font-size: 0.76rem; color: #64748b; line-height: 1.4; margin-bottom: 12px;">
+            Filename: <code>{{ r.source_filename }}</code><br>
+            Reference Type: <strong>{{ r.batch_label or 'Benchmark Solution' }}</strong>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid #f1f5f9; padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.72rem; color: #10b981; font-weight: 600;">&#10003; Authorized Reference</span>
+          <button type="button" class="btn btn-sm btn-outline" onclick="openRefModal('{{ r.assignment_name|replace('\'', '\\\'') }}', '{{ r.programming_language }}', `{{ r.source_code|replace('`', '\\`')|replace('$', '\\$') }}`)">
+            View Reference &rarr;
+          </button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state-card">
+    <div class="empty-state-icon">&#128218;</div>
+    <div class="empty-state-title">No authorized reference implementations found</div>
+    <div class="empty-state-desc">
+      {% if search_q or filter_year or filter_lang %}
+        No reference implementations match your filters. Try resetting the criteria.
+      {% else %}
+        No authorized benchmark reference implementations have been published yet for academic study.
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+<!-- Code Preview Modal -->
+<div class="modal-backdrop" id="refPreviewModal">
+  <div class="modal-dialog" style="max-width: 720px;">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title" id="refModalTitle">Reference Implementation</h3>
+        <span style="font-size: 0.76rem; color: #64748b;" id="refModalLang">Language</span>
+      </div>
+      <button type="button" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;" onclick="document.getElementById('refPreviewModal').classList.remove('active')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 16px;">
+      <div class="modern-code-container">
+        <pre id="refModalCode" style="margin: 0; padding: 14px; color: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.5; max-height: 400px; overflow: auto; white-space: pre;"></pre>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('refPreviewModal').classList.remove('active')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openRefModal(title, lang, code) {
+  document.getElementById("refModalTitle").textContent = title;
+  document.getElementById("refModalLang").textContent = "Language: " + lang.toUpperCase() + " • Instructor-Approved Reference";
+  document.getElementById("refModalCode").textContent = code;
+  document.getElementById("refPreviewModal").classList.add("active");
+}
+</script>
+{% endblock %}

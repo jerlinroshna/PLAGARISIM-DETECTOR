@@ -1,0 +1,525 @@
+{% extends "base.html" %}
+
+{% block title %}My Reports{% endblock %}
+{% block breadcrumb_page %}Reports{% endblock %}
+{% block page_title %}Academic Integrity Analytics & Reports{% endblock %}
+
+{% block content %}
+<div class="reports-header-bar">
+  <div>
+    <h2 class="reports-section-title">My Personal Analytics</h2>
+    <span class="reports-section-subtitle">Comprehensive overview of submission screenings and structural alignment scores</span>
+  </div>
+  <a href="{{ url_for('student.export_csv_report') }}" class="btn btn-outline" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px;">
+    <span>&#128190;</span> Export CSV Report
+  </a>
+</div>
+
+<!-- Row 1: 4 Equal-Height Primary Metric Cards in a Responsive Grid -->
+<div class="rep-metrics-grid">
+  <div class="rep-metric-card">
+    <div class="rep-metric-icon blue">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+      </svg>
+    </div>
+    <div class="rep-metric-body">
+      <div class="rep-metric-val">{{ total_analyzed }}</div>
+      <div class="rep-metric-label">Total Analyzed</div>
+      <div class="rep-metric-subtext">All submissions screened</div>
+    </div>
+  </div>
+
+  <div class="rep-metric-card">
+    <div class="rep-metric-icon indigo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+      </svg>
+    </div>
+    <div class="rep-metric-body">
+      <div class="rep-metric-val">{{ avg_similarity }}%</div>
+      <div class="rep-metric-label">Average Similarity</div>
+      <div class="rep-metric-subtext">Across text &amp; AST engines</div>
+    </div>
+  </div>
+
+  <div class="rep-metric-card">
+    <div class="rep-metric-icon green">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7 14l5-5 5 5z"/>
+      </svg>
+    </div>
+    <div class="rep-metric-body">
+      <div class="rep-metric-val">{{ min_similarity }}%</div>
+      <div class="rep-metric-label">Lowest Similarity</div>
+      <div class="rep-metric-subtext">Strongest unique formulation</div>
+    </div>
+  </div>
+
+  <div class="rep-metric-card">
+    <div class="rep-metric-icon amber">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7 10l5 5 5-5z"/>
+      </svg>
+    </div>
+    <div class="rep-metric-body">
+      <div class="rep-metric-val">{{ max_similarity }}%</div>
+      <div class="rep-metric-label">Highest Similarity</div>
+      <div class="rep-metric-subtext">Peak structural alignment</div>
+    </div>
+  </div>
+</div>
+
+<!-- Option B: Dedicated Submission Overview & Faculty Review Status Section -->
+{% set pending_eval = (total_analyzed - reviewed_count) if (total_analyzed >= reviewed_count) else 0 %}
+{% set review_pct = ((reviewed_count / total_analyzed) * 100)|round|int if total_analyzed > 0 else 0 %}
+<div class="rep-review-overview-card">
+  <div class="rep-review-overview-header">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="rep-review-badge-icon">&#10003;</span>
+      <div>
+        <h3 class="rep-review-card-title">Submission Review Overview</h3>
+        <span class="rep-review-card-subtitle">Faculty evaluation lifecycle and verification status</span>
+      </div>
+    </div>
+    <div class="rep-review-pct-pill">
+      <span>{{ review_pct }}% Evaluated</span>
+    </div>
+  </div>
+
+  <div class="rep-review-stats-grid">
+    <div class="rep-review-stat-item">
+      <span class="rep-review-stat-label">Total Analyzed</span>
+      <strong class="rep-review-stat-val">{{ total_analyzed }}</strong>
+    </div>
+    <div class="rep-review-stat-divider"></div>
+    <div class="rep-review-stat-item">
+      <span class="rep-review-stat-label">Reviewed by Faculty</span>
+      <strong class="rep-review-stat-val text-green" style="color: #059669;">{{ reviewed_count }}</strong>
+    </div>
+    <div class="rep-review-stat-divider"></div>
+    <div class="rep-review-stat-item">
+      <span class="rep-review-stat-label">Pending Evaluation</span>
+      <strong class="rep-review-stat-val text-amber" style="color: #d97706;">{{ pending_eval }}</strong>
+    </div>
+  </div>
+
+  <div class="rep-review-progress-track">
+    <div class="rep-review-progress-fill" style="width: {{ review_pct }}%;"></div>
+  </div>
+</div>
+
+<!-- Second Row: Score Distribution & Language Breakdown -->
+<div class="reports-distribution-grid">
+  <!-- Similarity Distribution Card -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h3 class="card-title">Similarity Score Band Distribution</h3>
+      <span class="badge" style="background: #f1f5f9; color: #475569;">{{ total_analyzed }} Total Screened</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px; padding: 12px 0;">
+      <!-- Low -->
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.84rem; margin-bottom: 6px;">
+          <span style="font-weight: 600; color: #065f46; display: inline-flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+            Low Similarity (&lt; 30%)
+          </span>
+          <strong style="color: #0f172a;">{{ low_count }} {% if total_analyzed > 0 %}<span style="color: #64748b; font-weight: normal;">({{ (low_count / total_analyzed * 100)|round|int }}%)</span>{% endif %}</strong>
+        </div>
+        <div style="height: 10px; background: #f1f5f9; border-radius: 9999px; overflow: hidden;">
+          <div style="width: {% if total_analyzed > 0 %}{{ (low_count / total_analyzed * 100) }}%{% else %}0%{% endif %}; background: #10b981; height: 100%; border-radius: 9999px;"></div>
+        </div>
+      </div>
+
+      <!-- Medium -->
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.84rem; margin-bottom: 6px;">
+          <span style="font-weight: 600; color: #92400e; display: inline-flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;"></span>
+            Medium Similarity (30%–69%)
+          </span>
+          <strong style="color: #0f172a;">{{ medium_count }} {% if total_analyzed > 0 %}<span style="color: #64748b; font-weight: normal;">({{ (medium_count / total_analyzed * 100)|round|int }}%)</span>{% endif %}</strong>
+        </div>
+        <div style="height: 10px; background: #f1f5f9; border-radius: 9999px; overflow: hidden;">
+          <div style="width: {% if total_analyzed > 0 %}{{ (medium_count / total_analyzed * 100) }}%{% else %}0%{% endif %}; background: #f59e0b; height: 100%; border-radius: 9999px;"></div>
+        </div>
+      </div>
+
+      <!-- High -->
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.84rem; margin-bottom: 6px;">
+          <span style="font-weight: 600; color: #991b1b; display: inline-flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+            High Similarity (&ge; 70%)
+          </span>
+          <strong style="color: #0f172a;">{{ high_count }} {% if total_analyzed > 0 %}<span style="color: #64748b; font-weight: normal;">({{ (high_count / total_analyzed * 100)|round|int }}%)</span>{% endif %}</strong>
+        </div>
+        <div style="height: 10px; background: #f1f5f9; border-radius: 9999px; overflow: hidden;">
+          <div style="width: {% if total_analyzed > 0 %}{{ (high_count / total_analyzed * 100) }}%{% else %}0%{% endif %}; background: #ef4444; height: 100%; border-radius: 9999px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Programming Language Usage Card -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h3 class="card-title">Programming Language Distribution</h3>
+      <span class="badge" style="background: #eff6ff; color: #1e40af;">AST Engines</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; padding: 10px 0;">
+      {% if language_stats and language_stats|length > 0 %}
+        {% for lang, cnt in language_stats.items() %}
+          {% set l_clean = lang|lower %}
+          {% if 'unsupported' in l_clean %}
+            {% set lang_label = 'Unsupported' %}
+            {% set badge_cls = 'badge-unsupported' %}
+            {% set engine_note = 'Non-standard extension (Text-only baseline)' %}
+          {% elif l_clean == 'c' %}
+            {% set lang_label = 'C' %}
+            {% set badge_cls = 'badge-c' %}
+            {% set engine_note = 'C Structural AST & Grammar Tokenizer' %}
+          {% elif l_clean == 'cpp' %}
+            {% set lang_label = 'C++' %}
+            {% set badge_cls = 'badge-cpp' %}
+            {% set engine_note = 'C++ Structural Lexer & AST Mapper' %}
+          {% elif l_clean == 'python' %}
+            {% set lang_label = 'Python' %}
+            {% set badge_cls = 'badge-python' %}
+            {% set engine_note = 'Python AST & Identifier Normalizer' %}
+          {% elif l_clean == 'java' %}
+            {% set lang_label = 'Java' %}
+            {% set badge_cls = 'badge-java' %}
+            {% set engine_note = 'Javalang Compilation Unit AST' %}
+          {% elif l_clean in ['javascript', 'js'] %}
+            {% set lang_label = 'JavaScript' %}
+            {% set badge_cls = 'badge-javascript' %}
+            {% set engine_note = 'Esprima Syntax Tree & Symbol Parser' %}
+          {% else %}
+            {% set lang_label = lang|capitalize %}
+            {% set badge_cls = 'badge-default' %}
+            {% set engine_note = 'Standard Structural Engine' %}
+          {% endif %}
+
+          <div class="rep-lang-row">
+            <div class="rep-lang-left">
+              <span class="rep-lang-badge {{ badge_cls }}">{{ lang_label }}</span>
+              <span class="rep-lang-meta">{{ engine_note }}</span>
+            </div>
+            <strong class="rep-lang-count">{{ cnt }} {% if cnt == 1 %}file{% else %}files{% endif %}</strong>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align: center; color: #94a3b8; padding: 24px;">No language data available</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Personal Insights Box -->
+<div class="card" style="background: #f8fafc; border-left: 4px solid #2563eb; margin-bottom: 24px;">
+  <div style="display: flex; gap: 14px; align-items: flex-start;">
+    <span style="font-size: 1.4rem; color: #2563eb;">&#128161;</span>
+    <div style="font-size: 0.84rem; line-height: 1.5; color: #334155;">
+      <strong style="color: #0f172a; font-size: 0.9rem; display: block; margin-bottom: 2px;">Automated Integrity Screening Insights</strong>
+      {% if low_count >= medium_count and low_count >= high_count and total_analyzed > 0 %}
+        Most of your submissions fall securely within the <strong>Low Similarity</strong> range (&lt; 30%), reflecting authentic individual problem formulations.
+      {% elif high_count > 0 %}
+        You have <strong>{{ high_count }} submission(s)</strong> in the high similarity band. Check for common boilerplate or request clarification if you used standard algorithms.
+      {% else %}
+        Your reports will continuously update as faculty complete reviews and new assignments are processed.
+      {% endif %}
+      <div style="font-size: 0.76rem; color: #64748b; margin-top: 4px;">
+        Remember: Automated similarity scores are screening indicators and do not automatically imply academic misconduct.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Assignment Performance Table Container Card -->
+<div class="card">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h3 class="card-title" style="margin-bottom: 2px;">Analyzed Assignment History</h3>
+      <span style="font-size: 0.8rem; color: #64748b;">Detailed multi-engine similarity screenings and faculty evaluation status</span>
+    </div>
+    <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.8rem;">
+      {{ records|length }} Screened Records
+    </span>
+  </div>
+
+  <!-- Filter Toolbar -->
+  <form method="GET" action="{{ url_for('student.reports') }}" style="margin-bottom: 20px;">
+    <div class="subs-filter-form" style="grid-template-columns: 2fr 1.2fr 1.2fr auto;">
+      <select name="assignment" class="subs-form-select">
+        <option value="">All Assignments</option>
+        {% for a in assignments %}
+          <option value="{{ a.id }}" {% if filter_asgn == a.id|string %}selected{% endif %}>{{ a.title }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="language" class="subs-form-select">
+        <option value="">All Languages</option>
+        <option value="c" {% if filter_lang == 'c' %}selected{% endif %}>C</option>
+        <option value="cpp" {% if filter_lang == 'cpp' %}selected{% endif %}>C++</option>
+        <option value="python" {% if filter_lang == 'python' %}selected{% endif %}>Python</option>
+        <option value="java" {% if filter_lang == 'java' %}selected{% endif %}>Java</option>
+        <option value="javascript" {% if filter_lang == 'javascript' %}selected{% endif %}>JavaScript</option>
+      </select>
+
+      <select name="similarity" class="subs-form-select">
+        <option value="">Any Similarity Band</option>
+        <option value="Low Similarity" {% if filter_band == 'Low Similarity' %}selected{% endif %}>Low (&lt; 30%)</option>
+        <option value="Medium Similarity" {% if filter_band == 'Medium Similarity' %}selected{% endif %}>Medium (30%–69%)</option>
+        <option value="High Similarity" {% if filter_band == 'High Similarity' %}selected{% endif %}>High (&ge; 70%)</option>
+      </select>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="submit" class="subs-filter-submit-btn">Filter</button>
+        {% if filter_asgn or filter_lang or filter_band %}
+          <a href="{{ url_for('student.reports') }}" class="btn btn-secondary" style="height: 42px; display: inline-flex; align-items: center; padding: 0 14px; font-size: 0.86rem; border-radius: 8px;">Reset</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+
+  {% if records and records|length > 0 %}
+    <!-- 6-Column High-End Desktop Table (>= 860px) -->
+    <div class="rep-desktop-table-container">
+      <table class="rep-table">
+        <thead>
+          <tr>
+            <th class="col-rep-assignment">Assignment &amp; Metadata</th>
+            <th class="col-rep-language">Language</th>
+            <th class="col-rep-submitted">Submitted</th>
+            <th class="col-rep-score">Similarity Breakdown</th>
+            <th class="col-rep-review">Faculty Review</th>
+            <th class="col-rep-action">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+            {% set lang_raw = (r.programming_language or '')|upper %}
+            {% set is_unsupported = 'UNSUPPORTED' in lang_raw or lang_raw == '' %}
+            {% set is_unmatched = 'UNMATCHED' in (r.assignment_title or '')|upper %}
+
+            {% set score = r.combined_similarity_score %}
+            {% set sim_cls = 'low' %}
+            {% if score is not none %}
+              {% if score >= 70.0 %}{% set sim_cls = 'high' %}
+              {% elif score >= 30.0 %}{% set sim_cls = 'medium' %}
+              {% endif %}
+            {% endif %}
+
+            {% set rev_status = r.review_status or 'Pending Review' %}
+            {% set rev_cls = 'pending' %}
+            {% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+              {% set rev_cls = 'reviewed' %}
+            {% elif rev_status == 'Further Investigation Required' %}
+              {% set rev_cls = 'investigate' %}
+            {% endif %}
+
+            <tr>
+              <!-- 1. Assignment & Metadata (35%) -->
+              <td class="col-rep-assignment">
+                {% if is_unmatched %}
+                  <span class="sub-test-tag">Test / Unmatched Submission</span>
+                  <div class="sub-asgn-title">Unmatched Assignment</div>
+                  <div class="sub-asgn-desc">{{ r.title or 'Submission' }} &bull; {{ r.subject or 'Unmatched Subject' }}</div>
+                  <div class="sub-asgn-meta">#{{ r.id }} &bull; {{ r.source_filename }}</div>
+                {% else %}
+                  <div class="sub-asgn-title" title="{{ r.assignment_title }}">
+                    {{ r.assignment_title }}
+                  </div>
+                  <div class="sub-asgn-desc" title="{{ r.subject }}">
+                    {{ r.subject }}{% if r.title and r.title != r.assignment_title %} &bull; {{ r.title }}{% endif %}
+                  </div>
+                  <div class="sub-asgn-meta">#{{ r.id }} &bull; {{ r.source_filename }}</div>
+                {% endif %}
+              </td>
+
+              <!-- 2. Language Column (10%) -->
+              <td class="col-rep-language">
+                {% if is_unsupported %}
+                  <span class="lang-badge-compact unsupported">Unsupported</span>
+                {% elif r.programming_language|lower == 'javascript' or r.programming_language|lower == 'js' %}
+                  <span class="lang-badge-compact">JavaScript</span>
+                {% elif r.programming_language|lower == 'python' %}
+                  <span class="lang-badge-compact">Python</span>
+                {% elif r.programming_language|lower == 'cpp' %}
+                  <span class="lang-badge-compact">C++</span>
+                {% elif r.programming_language|lower == 'java' %}
+                  <span class="lang-badge-compact">Java</span>
+                {% elif r.programming_language|lower == 'c' %}
+                  <span class="lang-badge-compact">C</span>
+                {% else %}
+                  <span class="lang-badge-compact">{{ r.programming_language|capitalize }}</span>
+                {% endif %}
+              </td>
+
+              <!-- 3. Submitted Column (13%) -->
+              <td class="col-rep-submitted">
+                <div class="sub-date-primary">{{ r.submitted_at[:10] }}</div>
+                <div class="sub-time-secondary">{{ r.submitted_at[11:16] }}</div>
+              </td>
+
+              <!-- 4. Similarity Multi-Engine Breakdown (20%) -->
+              <td class="col-rep-score">
+                <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px;">
+                  <span style="font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.1;">
+                    {{ r.combined_similarity_score or 0.0 }}%
+                  </span>
+                  <span class="sim-badge-compact {{ sim_cls }}">
+                    {{ r.similarity_label or ('Low Similarity' if (r.combined_similarity_score or 0) < 30 else ('Medium Similarity' if (r.combined_similarity_score or 0) < 70 else 'High Similarity')) }}
+                  </span>
+                </div>
+                <div class="rep-engine-breakdown">
+                  <span class="rep-engine-tag" title="Text Winnowing Algorithm (40% Weight)">
+                    Text: <strong>{{ r.text_similarity_score or 0.0 }}%</strong>
+                  </span>
+                  <span class="rep-engine-divider">&bull;</span>
+                  <span class="rep-engine-tag" title="AST Structural Matching (60% Weight)">
+                    AST: <strong style="color: #4f46e5;">{{ r.ast_similarity_score or 0.0 }}%</strong>
+                  </span>
+                </div>
+              </td>
+
+              <!-- 5. Faculty Review Column (12%) -->
+              <td class="col-rep-review">
+                <span class="review-badge-compact {{ rev_cls }}">
+                  {% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+                    &#10003; Reviewed
+                  {% elif rev_status == 'Further Investigation Required' %}
+                    &#9888; Further Investigation
+                  {% else %}
+                    &#9717; Pending Review
+                  {% endif %}
+                </span>
+                {% if r.review_notes %}
+                  <div style="font-size: 11px; color: #64748b; margin-top: 3px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ r.review_notes }}">
+                    Note: {{ r.review_notes }}
+                  </div>
+                {% endif %}
+              </td>
+
+              <!-- 6. Action Column (10%) -->
+              <td class="col-rep-action">
+                <a href="{{ url_for('student.submission_detail', sub_id=r.id) }}" class="action-btn-compact">
+                  View Detail &rarr;
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Responsive Cards for Mobile View (< 860px) -->
+    <div class="rep-mobile-cards-container">
+      {% for r in records %}
+        {% set lang_raw = (r.programming_language or '')|upper %}
+        {% set is_unsupported = 'UNSUPPORTED' in lang_raw or lang_raw == '' %}
+        {% set is_unmatched = 'UNMATCHED' in (r.assignment_title or '')|upper %}
+
+        {% set score = r.combined_similarity_score %}
+        {% set sim_cls = 'low' %}
+        {% if score is not none %}
+          {% if score >= 70.0 %}{% set sim_cls = 'high' %}
+          {% elif score >= 30.0 %}{% set sim_cls = 'medium' %}
+          {% endif %}
+        {% endif %}
+
+        {% set rev_status = r.review_status or 'Pending Review' %}
+        {% set rev_cls = 'pending' %}
+        {% if rev_status in ['Reviewed', 'No Concern Identified'] %}
+          {% set rev_cls = 'reviewed' %}
+        {% elif rev_status == 'Further Investigation Required' %}
+          {% set rev_cls = 'investigate' %}
+        {% endif %}
+
+        <div class="rep-card-item">
+          <div class="rep-card-header">
+            <div>
+              {% if is_unmatched %}
+                <span class="sub-test-tag">Test / Unmatched</span>
+                <div class="sub-asgn-title">Unmatched Assignment</div>
+              {% else %}
+                <div class="sub-asgn-title">{{ r.assignment_title }}</div>
+              {% endif %}
+              <div class="sub-asgn-desc">{{ r.subject }}</div>
+              <div class="sub-asgn-meta">#{{ r.id }} &bull; {{ r.source_filename }}</div>
+            </div>
+            <div>
+              {% if is_unsupported %}
+                <span class="lang-badge-compact unsupported">Unsupported</span>
+              {% elif r.programming_language|lower == 'javascript' or r.programming_language|lower == 'js' %}
+                <span class="lang-badge-compact">JavaScript</span>
+              {% elif r.programming_language|lower == 'python' %}
+                <span class="lang-badge-compact">Python</span>
+              {% elif r.programming_language|lower == 'cpp' %}
+                <span class="lang-badge-compact">C++</span>
+              {% elif r.programming_language|lower == 'java' %}
+                <span class="lang-badge-compact">Java</span>
+              {% elif r.programming_language|lower == 'c' %}
+                <span class="lang-badge-compact">C</span>
+              {% else %}
+                <span class="lang-badge-compact">{{ r.programming_language|capitalize }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="rep-card-details-grid">
+            <div>
+              <div class="rep-card-detail-label">Combined Score</div>
+              <div class="rep-card-detail-val" style="display: flex; align-items: center; gap: 6px;">
+                <strong>{{ r.combined_similarity_score or 0.0 }}%</strong>
+                <span class="sim-badge-compact {{ sim_cls }}" style="font-size: 10px; padding: 1px 6px;">
+                  {{ r.similarity_label or 'Score' }}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <div class="rep-card-detail-label">Engines (Text/AST)</div>
+              <div class="rep-card-detail-val" style="font-size: 12px;">
+                T: {{ r.text_similarity_score or 0.0 }}% &bull; AST: {{ r.ast_similarity_score or 0.0 }}%
+              </div>
+            </div>
+
+            <div>
+              <div class="rep-card-detail-label">Submitted</div>
+              <div class="rep-card-detail-val" style="font-size: 12px;">{{ r.submitted_at[:16] }}</div>
+            </div>
+
+            <div>
+              <div class="rep-card-detail-label">Faculty Review</div>
+              <div class="rep-card-detail-val">
+                <span class="review-badge-compact {{ rev_cls }}" style="font-size: 11px;">
+                  {{ rev_status }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+            <a href="{{ url_for('student.submission_detail', sub_id=r.id) }}" class="action-btn-compact" style="width: 100%; text-align: center;">
+              View Submission Detail &rarr;
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state-card">
+      <div class="empty-state-icon">&#128202;</div>
+      <div class="empty-state-title">No analyzed submissions available</div>
+      <div class="empty-state-desc">Your detailed analytics will appear here once you submit assignments for automated screening.</div>
+      <a href="{{ url_for('student.submit') }}" class="btn btn-primary">+ Submit Code</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

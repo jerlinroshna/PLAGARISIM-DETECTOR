@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Plagiarism Reports & Analytics{% endblock %}
+{% block page_title %}Plagiarism Analytics & Academic Reports{% endblock %}
+
+{% block content %}
+<!-- Summary Statistics Metric Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">Total Submissions Screened</span>
+    <span class="stat-value">{{ total_analyzed }}</span>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid #ef4444;">
+    <span class="stat-label">High Similarity (&ge; 70%)</span>
+    <span class="stat-value" style="color: #ef4444;">{{ high_count }}</span>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+    <span class="stat-label">Medium Similarity (30-69%)</span>
+    <span class="stat-value" style="color: #f59e0b;">{{ medium_count }}</span>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid #10b981;">
+    <span class="stat-label">Low Similarity (&lt; 30%)</span>
+    <span class="stat-value" style="color: #10b981;">{{ low_count }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Reviewed Cases</span>
+    <span class="stat-value" style="color: #3b82f6;">{{ reviewed_count }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Under Investigation</span>
+    <span class="stat-value" style="color: #dc2626;">{{ investigation_count }}</span>
+  </div>
+</div>
+
+<!-- Filters and CSV Export Card -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Comprehensive Screening Report</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
+        Detailed breakdown of similarity evaluations and faculty review decisions.
+      </p>
+    </div>
+    <a href="{{ url_for('faculty.export_csv_report') }}" class="btn btn-primary">
+      &#128190; Export Report to CSV
+    </a>
+  </div>
+
+  <!-- Filter Form -->
+  <form method="GET" action="{{ url_for('faculty.reports') }}" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; align-items: flex-end;">
+    <div style="flex: 2; min-width: 180px;">
+      <label class="form-label" style="font-size: 0.78rem;">Filter Assignment</label>
+      <select class="form-control" name="assignment">
+        <option value="">All Assignments</option>
+        {% for a in assignments %}
+          <option value="{{ a.id }}" {% if filter_asgn == a.id|string %}selected{% endif %}>{{ a.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 130px;">
+      <label class="form-label" style="font-size: 0.78rem;">Language</label>
+      <select class="form-control" name="language">
+        <option value="">All Languages</option>
+        <option value="python" {% if filter_lang == 'python' %}selected{% endif %}>Python</option>
+        <option value="c" {% if filter_lang == 'c' %}selected{% endif %}>C</option>
+        <option value="cpp" {% if filter_lang == 'cpp' %}selected{% endif %}>C++</option>
+        <option value="java" {% if filter_lang == 'java' %}selected{% endif %}>Java</option>
+        <option value="javascript" {% if filter_lang == 'javascript' %}selected{% endif %}>JavaScript</option>
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 160px;">
+      <label class="form-label" style="font-size: 0.78rem;">Review Status</label>
+      <select class="form-control" name="review_status">
+        <option value="">All Review Statuses</option>
+        <option value="Pending Review" {% if filter_status == 'Pending Review' %}selected{% endif %}>Pending Review</option>
+        <option value="Reviewed" {% if filter_status == 'Reviewed' %}selected{% endif %}>Reviewed</option>
+        <option value="Further Investigation Required" {% if filter_status == 'Further Investigation Required' %}selected{% endif %}>Further Investigation</option>
+        <option value="No Concern Identified" {% if filter_status == 'No Concern Identified' %}selected{% endif %}>No Concern</option>
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <button type="submit" class="btn btn-secondary">Filter</button>
+      <a href="{{ url_for('faculty.reports') }}" class="btn btn-outline">Reset</a>
+    </div>
+  </form>
+
+  <!-- Report Data Table -->
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Sub ID</th>
+          <th>Student</th>
+          <th>Assignment Name</th>
+          <th>Lang</th>
+          <th>Historical Archive Match</th>
+          <th>Text %</th>
+          <th>AST %</th>
+          <th>Combined %</th>
+          <th>Classification</th>
+          <th>Review Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if records %}
+          {% for r in records %}
+          <tr>
+            <td><strong>#{{ r.id }}</strong></td>
+            <td>
+              <strong>{{ r.full_name }}</strong>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">{{ r.username }}</div>
+            </td>
+            <td>
+              <div>{{ r.assignment_title }}</div>
+              <small style="color: var(--text-muted);">{{ r.subject }}</small>
+            </td>
+            <td><code>{{ r.programming_language|upper }}</code></td>
+            <td style="font-size: 0.82rem;">
+              {% if r.hist_filename %}
+                <span style="color: var(--primary);">AY {{ r.hist_year }} &bull; {{ r.hist_filename }}</span>
+              {% else %}
+                <span style="color: var(--text-muted); font-style: italic;">None</span>
+              {% endif %}
+            </td>
+            <td>{{ r.text_similarity_score or 0.0 }}%</td>
+            <td>{{ r.ast_similarity_score or 0.0 }}%</td>
+            <td><strong>{{ r.combined_similarity_score or 0.0 }}%</strong></td>
+            <td>
+              <span class="badge {% if r.similarity_label == 'High Similarity' %}badge-high{% elif r.similarity_label == 'Medium Similarity' %}badge-medium{% else %}badge-low{% endif %}">
+                {{ r.similarity_label }}
+              </span>
+            </td>
+            <td>
+              <span class="badge badge-status {% if r.review_status == 'Reviewed' or r.review_status == 'No Concern Identified' %}active{% elif r.review_status == 'Further Investigation Required' %}investigate{% else %}pending{% endif %}">
+                {{ r.review_status or 'Pending Review' }}
+              </span>
+            </td>
+            <td>
+              <a href="{{ url_for('faculty.analysis_detail', sub_id=r.id) }}" class="btn btn-sm btn-outline">
+                Inspect
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
+              No records match the current report filters.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
