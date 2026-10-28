@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Academic Portal{% endblock %} - CodeGuard Academic Integrity</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -132,6 +132,26 @@
         </a>
       </nav>
 
+      {% if current_user.role == 'student' %}
+      <div class="sidebar-promo-card">
+        <div class="promo-sprout-icon">&#127793;</div>
+        <div class="promo-text">Small steps<br>make big progress!</div>
+        <div class="promo-books-img">
+          <svg width="74" height="54" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 70 L95 52 L105 56 L30 74 Z" fill="#1e3a8a"/>
+            <path d="M20 70 L30 74 L30 80 L20 76 Z" fill="#172554"/>
+            <path d="M30 74 L105 56 L105 62 L30 80 Z" fill="#2563eb"/>
+            <path d="M25 54 L92 38 L102 42 L35 58 Z" fill="#047857"/>
+            <path d="M25 54 L35 58 L35 64 L25 60 Z" fill="#064e3b"/>
+            <path d="M35 58 L102 42 L102 48 L35 64 Z" fill="#10b981"/>
+            <path d="M30 38 L88 24 L98 28 L40 42 Z" fill="#1d4ed8"/>
+            <path d="M30 38 L40 42 L40 48 L30 44 Z" fill="#1e40af"/>
+            <path d="M40 42 L98 28 L98 34 L40 48 Z" fill="#3b82f6"/>
+          </svg>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="sidebar-footer">
         <div class="sidebar-user-card">
           <div class="sidebar-user-avatar">{{ current_user.username[:3] }}</div>
@@ -160,6 +180,14 @@
             </div>
             <h1 class="page-title" style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0;">{% block page_title %}Academic Portal{% endblock %}</h1>
           </div>
+        </div>
+
+        <!-- EduSphere Pill Search Bar -->
+        <div class="topbar-search-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+          <input type="text" class="topbar-search-input" placeholder="Search for courses, topics, or instructors..." id="globalSearchInput">
         </div>
 
         <div class="topbar-right topbar-actions">
@@ -220,9 +248,6 @@
                 </a>
                 <a href="{{ url_for('student.profile') }}" class="user-menu-link">
                   <span>&#9881;</span> Settings
-                </a>
-                <a href="{{ url_for('student.academic_integrity') }}" class="user-menu-link">
-                  <span>&#128220;</span> Academic Integrity
                 </a>
                 <div class="user-menu-divider"></div>
               {% endif %}

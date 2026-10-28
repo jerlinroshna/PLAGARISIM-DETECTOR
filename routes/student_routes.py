@@ -746,11 +746,7 @@ def mark_all_notifications_read():
 @login_required
 @role_required("student")
 def academic_integrity():
-    user = get_current_user()
-    return render_template(
-        "student/academic_integrity.html",
-        user=user
-    )
+    return redirect(url_for("student.dashboard"))
 
 @student_bp.route("/profile")
 @login_required

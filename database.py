@@ -498,13 +498,14 @@ def seed_sample_notifications():
 
     # Check student accounts
     students = cursor.execute("SELECT id, username FROM users WHERE role = 'student'").fetchall()
+    cursor.execute("UPDATE student_notifications SET link_url = '/student/dashboard' WHERE link_url = '/student/academic-integrity'")
     for stu in students[:5]:  # seed for top 5 demo students
         existing = cursor.execute("SELECT COUNT(*) FROM student_notifications WHERE student_id = ?", (stu["id"],)).fetchone()[0]
         if existing == 0:
             sample_notifs = [
-                ("Academic Session 2024–2025 Active", "Welcome to the Academic Integrity & Code Submission Portal. Please review the submission guidelines before submitting your assignments.", "info", "/student/academic-integrity"),
+                ("Academic Session 2024–2025 Active", "Welcome to the Academic Integrity & Code Submission Portal. Please review the submission guidelines before submitting your assignments.", "info", "/student/dashboard"),
                 ("Data Structures Lab 1 Open", "Assignment 'Data Structures Lab 1' is currently active and accepting submissions in Java, Python, and C++.", "assignment", "/student/submit"),
-                ("Automated Screening Engine Ready", "Multi-language AST structural screening (Python, C, C++, Java, JS) is fully operational for this academic session.", "system", "/student/academic-integrity")
+                ("Automated Screening Engine Ready", "Multi-language AST structural screening (Python, C, C++, Java, JS) is fully operational for this academic session.", "system", "/student/dashboard")
             ]
             for title, msg, cat, link in sample_notifs:
                 cursor.execute("""
