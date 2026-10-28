@@ -38,12 +38,14 @@
       <div class="form-group">
         <label class="form-label" for="username">Username / Institutional ID</label>
         <input type="text" class="form-control" id="username" name="username" 
-               placeholder="Enter your username or ID" required autofocus autocomplete="username">
+               value="{% if role == 'faculty' %}FAC001{% else %}STU001{% endif %}"
+               placeholder="e.g. STU001 or FAC001" required autofocus autocomplete="username">
       </div>
 
       <div class="form-group">
         <label class="form-label" for="password">Password</label>
         <input type="password" class="form-control" id="password" name="password" 
+               value="{% if role == 'faculty' %}Faculty@123{% else %}Student@123{% endif %}"
                placeholder="Enter your password" required autocomplete="current-password">
       </div>
 
@@ -51,11 +53,32 @@
         Sign In to Portal
       </button>
     </form>
-
-    <div class="login-footer-notice">
-      Department of Computer Science & Engineering<br>
-      Authorized institutional access only. All activities are monitored.
-    </div>
   </div>
 </div>
+
+<script>
+  (function() {
+    const roleBtns = document.querySelectorAll('.role-toggle-btn');
+    const roleInput = document.getElementById('login-role-input');
+    const userInput = document.getElementById('username');
+    const passInput = document.getElementById('password');
+
+    roleBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const role = this.getAttribute('data-role');
+        if (userInput && passInput) {
+          if (!userInput.value || userInput.value === 'STU001' || userInput.value === 'FAC001') {
+            if (role === 'faculty') {
+              userInput.value = 'FAC001';
+              passInput.value = 'Faculty@123';
+            } else {
+              userInput.value = 'STU001';
+              passInput.value = 'Student@123';
+            }
+          }
+        }
+      });
+    });
+  })();
+</script>
 {% endblock %}

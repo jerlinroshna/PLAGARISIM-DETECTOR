@@ -428,6 +428,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // 14. Login Role Selector helper (preserved)
   const roleButtons = document.querySelectorAll(".role-toggle-btn");
   const roleInput = document.getElementById("login-role-input");
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
   if (roleButtons.length > 0 && roleInput) {
     roleButtons.forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -435,6 +437,18 @@ document.addEventListener("DOMContentLoaded", function () {
         this.classList.add("active");
         const role = this.getAttribute("data-role");
         roleInput.value = role;
+
+        if (usernameInput && passwordInput) {
+          if (!usernameInput.value || usernameInput.value === "STU001" || usernameInput.value === "FAC001") {
+            if (role === "faculty") {
+              usernameInput.value = "FAC001";
+              passwordInput.value = "Faculty@123";
+            } else {
+              usernameInput.value = "STU001";
+              passwordInput.value = "Student@123";
+            }
+          }
+        }
       });
     });
   }
