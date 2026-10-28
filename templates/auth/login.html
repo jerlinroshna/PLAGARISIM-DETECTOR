@@ -38,15 +38,13 @@
       <div class="form-group">
         <label class="form-label" for="username">Username / Institutional ID</label>
         <input type="text" class="form-control" id="username" name="username" 
-               value="{% if role == 'faculty' %}FAC001{% else %}STU001{% endif %}"
-               placeholder="e.g. STU001 or FAC001" required autofocus autocomplete="username">
+               placeholder="Enter the username" required autofocus autocomplete="username">
       </div>
 
       <div class="form-group">
         <label class="form-label" for="password">Password</label>
         <input type="password" class="form-control" id="password" name="password" 
-               value="{% if role == 'faculty' %}Faculty@123{% else %}Student@123{% endif %}"
-               placeholder="Enter your password" required autocomplete="current-password">
+               placeholder="Enter the password" required autocomplete="current-password">
       </div>
 
       <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px; margin-top: 10px; font-weight: 600;">
@@ -60,22 +58,14 @@
   (function() {
     const roleBtns = document.querySelectorAll('.role-toggle-btn');
     const roleInput = document.getElementById('login-role-input');
-    const userInput = document.getElementById('username');
-    const passInput = document.getElementById('password');
 
     roleBtns.forEach(function(btn) {
       btn.addEventListener('click', function() {
         const role = this.getAttribute('data-role');
-        if (userInput && passInput) {
-          if (!userInput.value || userInput.value === 'STU001' || userInput.value === 'FAC001') {
-            if (role === 'faculty') {
-              userInput.value = 'FAC001';
-              passInput.value = 'Faculty@123';
-            } else {
-              userInput.value = 'STU001';
-              passInput.value = 'Student@123';
-            }
-          }
+        roleBtns.forEach(function(b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        if (roleInput) {
+          roleInput.value = role;
         }
       });
     });
