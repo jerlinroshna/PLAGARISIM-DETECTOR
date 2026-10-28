@@ -345,6 +345,178 @@ body {
   line-height: 1.2;
 }
 
+/* ==========================================================================
+   Compact Icon-Only Sidebar for Student Portal
+   ========================================================================== */
+@media (min-width: 1025px) {
+  .sidebar.sidebar-student-mini {
+    width: 76px !important;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar.sidebar-student-mini .sidebar-header {
+    padding: 16px 8px !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  .sidebar.sidebar-student-mini .sidebar-brand-text {
+    display: none !important;
+  }
+
+  .sidebar.sidebar-student-mini .sidebar-close-btn {
+    display: none !important;
+  }
+
+  .sidebar.sidebar-student-mini .sidebar-emblem {
+    width: 42px !important;
+    height: 42px !important;
+    margin: 0 auto !important;
+  }
+
+  .sidebar.sidebar-student-mini .nav-section-title {
+    display: none !important;
+  }
+
+  .sidebar.sidebar-student-mini .sidebar-nav {
+    padding: 16px 8px !important;
+    align-items: center !important;
+    gap: 10px !important;
+    overflow-x: visible !important;
+  }
+
+  .sidebar.sidebar-student-mini .nav-item {
+    width: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    position: relative !important;
+    overflow: visible !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .sidebar.sidebar-student-mini .nav-item .nav-icon {
+    width: 42px !important;
+    height: 42px !important;
+    margin: 0 !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .sidebar.sidebar-student-mini .nav-item .nav-icon svg {
+    width: 21px !important;
+    height: 21px !important;
+  }
+
+  /* Floating Popover Tooltip for Icon Name on Hover */
+  .sidebar.sidebar-student-mini .nav-item .nav-label {
+    position: absolute !important;
+    left: calc(100% + 14px) !important;
+    top: 50% !important;
+    transform: translateY(-50%) translateX(-8px) !important;
+    background: #0f172a !important;
+    color: #ffffff !important;
+    padding: 7px 14px !important;
+    border-radius: 6px !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    z-index: 99999 !important;
+  }
+
+  /* Tooltip arrow pointing towards the icon */
+  .sidebar.sidebar-student-mini .nav-item .nav-label::before {
+    content: "" !important;
+    position: absolute !important;
+    right: 100% !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    border-width: 6px !important;
+    border-style: solid !important;
+    border-color: transparent #0f172a transparent transparent !important;
+  }
+
+  /* Hover highlight effect on icon and show tooltip name */
+  .sidebar.sidebar-student-mini .nav-item:hover {
+    background: rgba(37, 99, 235, 0.12) !important;
+  }
+
+  .sidebar.sidebar-student-mini .nav-item:hover .nav-icon {
+    color: #60a5fa !important;
+    background: rgba(37, 99, 235, 0.24) !important;
+    transform: scale(1.1) !important;
+  }
+
+  .sidebar.sidebar-student-mini .nav-item:hover .nav-label {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(-50%) translateX(0) !important;
+  }
+
+  /* Active state for student mini sidebar */
+  .sidebar.sidebar-student-mini .nav-item.active {
+    background: transparent !important;
+  }
+
+  .sidebar.sidebar-student-mini .nav-item.active .nav-icon {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5) !important;
+  }
+
+  .sidebar.sidebar-student-mini .nav-item.active .nav-icon svg {
+    fill: #ffffff !important;
+  }
+
+  .sidebar.sidebar-student-mini .nav-item.active::before {
+    left: -4px !important;
+    height: 28px !important;
+    width: 3.5px !important;
+    background: #3b82f6 !important;
+  }
+
+  /* Footer for Student mini sidebar */
+  .sidebar.sidebar-student-mini .sidebar-footer {
+    padding: 12px 6px !important;
+  }
+
+  .sidebar.sidebar-student-mini .sidebar-user-card {
+    padding: 6px !important;
+    justify-content: center !important;
+    position: relative !important;
+  }
+
+  .sidebar.sidebar-student-mini .sidebar-user-avatar {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 0.8rem !important;
+    margin: 0 auto !important;
+  }
+
+  .sidebar.sidebar-student-mini .sidebar-user-info {
+    display: none !important;
+  }
+
+  .sidebar.sidebar-student-mini .sidebar-divider {
+    margin: 10px auto !important;
+    width: 36px !important;
+  }
+}
+
 /* Main Content Area */
 .main-wrapper {
   flex-grow: 1;
