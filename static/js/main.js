@@ -49,21 +49,110 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // 1b. Sidebar Menu Bar Collapsible Toggle
-  const menuToggle = document.getElementById("sidebarMenuToggle");
-  const navGroup = document.getElementById("studentNavGroup");
-  if (menuToggle && navGroup) {
-    menuToggle.addEventListener("click", function (e) {
-      e.stopPropagation();
-      navGroup.classList.toggle("open");
-      const isExpanded = navGroup.classList.contains("open");
-      menuToggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+  // 1b. Desktop Mini Sidebar Toggle & Persistence
+  try {
+    const savedMini = localStorage.getItem("codeguard_sidebar_mini");
+    if (savedMini === "true" && sidebar) {
+      sidebar.classList.add("sidebar-student-mini");
+    }
+  } catch (err) {
+    // Local storage disabled or error
+  }
+
+  // 1c. Theme Switcher (Cycle: light, dark, system - Phase A.4 & Phase B)
+  const themeToggleBtn = document.getElementById("themeToggleBtn");
+  function applyTheme(theme) {
+    if (theme === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+      document.body.classList.add("theme-dark");
+      if (themeToggleBtn) {
+        themeToggleBtn.setAttribute("title", "Active: Dark Mode (Click to cycle)");
+        themeToggleBtn.setAttribute("aria-label", "Toggle theme: Dark mode active");
+      }
+    } else if (theme === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+      document.body.classList.remove("theme-dark");
+      if (themeToggleBtn) {
+        themeToggleBtn.setAttribute("title", "Active: Light Mode (Click to cycle)");
+        themeToggleBtn.setAttribute("aria-label", "Toggle theme: Light mode active");
+      }
+    } else {
+      // System mode
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (prefersDark) {
+        document.documentElement.setAttribute("data-theme", "dark");
+        document.body.classList.add("theme-dark");
+      } else {
+        document.documentElement.setAttribute("data-theme", "light");
+        document.body.classList.remove("theme-dark");
+      }
+      if (themeToggleBtn) {
+        themeToggleBtn.setAttribute("title", "Active: System Mode (Click to cycle)");
+        themeToggleBtn.setAttribute("aria-label", "Toggle theme: System preference active");
+      }
+    }
+  }
+
+  let currentTheme = "light";
+  try {
+    currentTheme = localStorage.getItem("codeguard_theme") || "light";
+  } catch (e) {
+    currentTheme = "light";
+  }
+  applyTheme(currentTheme);
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", function () {
+      let nextTheme = "light";
+      if (currentTheme === "light") nextTheme = "dark";
+      else if (currentTheme === "dark") nextTheme = "system";
+      else nextTheme = "light";
+
+      currentTheme = nextTheme;
+      try {
+        localStorage.setItem("codeguard_theme", nextTheme);
+      } catch (e) {}
+      applyTheme(nextTheme);
+    });
+  }
+
+  // 1d. Global Keyboard Shortcuts: Ctrl+K / Cmd+K to focus Search, Esc to close popovers
+  const searchInput = document.getElementById("globalSearchInput");
+  const searchPill = document.getElementById("topbarSearchPill");
+  const notifMenu = document.getElementById("notifDropdownMenu");
+  const userMenu = document.getElementById("userProfileMenu");
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+      e.preventDefault();
+      if (searchPill && window.innerWidth <= 768) {
+        searchPill.classList.add("mobile-expanded");
+      }
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    } else if (e.key === "Escape") {
+      if (notifMenu) notifMenu.classList.remove("active");
+      if (userMenu) userMenu.classList.remove("active");
+      if (searchPill) searchPill.classList.remove("mobile-expanded");
+      if (searchInput && document.activeElement === searchInput) {
+        searchInput.blur();
+      }
+    }
+  });
+
+  if (searchPill) {
+    searchPill.addEventListener("click", function (e) {
+      if (window.innerWidth <= 768) {
+        searchPill.classList.add("mobile-expanded");
+        if (searchInput) searchInput.focus();
+      }
     });
   }
 
   // 2. Notification Bell & User Dropdown Popovers
   const notifBtn = document.getElementById("notifBellBtn");
-  const notifMenu = document.getElementById("notifDropdownMenu");
   if (notifBtn && notifMenu) {
     notifBtn.addEventListener("click", function (e) {
       e.stopPropagation();
@@ -73,7 +162,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   const userBtn = document.getElementById("userProfileBtn");
-  const userMenu = document.getElementById("userProfileMenu");
   if (userBtn && userMenu) {
     userBtn.addEventListener("click", function (e) {
       e.stopPropagation();
@@ -82,9 +170,16 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  document.addEventListener("click", function () {
-    if (notifMenu) notifMenu.classList.remove("active");
-    if (userMenu) userMenu.classList.remove("active");
+  document.addEventListener("click", function (e) {
+    if (notifMenu && !notifMenu.contains(e.target) && notifBtn && !notifBtn.contains(e.target)) {
+      notifMenu.classList.remove("active");
+    }
+    if (userMenu && !userMenu.contains(e.target) && userBtn && !userBtn.contains(e.target)) {
+      userMenu.classList.remove("active");
+    }
+    if (searchPill && !searchPill.contains(e.target)) {
+      searchPill.classList.remove("mobile-expanded");
+    }
   });
 
   // 3. Tab switching (e.g. Upload File vs Paste Code)
@@ -530,35 +625,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // 16. Theme Mode Toggle (Light / Dark) with localStorage persistence
-  const themeToggleBtn = document.getElementById("themeToggleBtn");
-  const storedTheme = localStorage.getItem("codeguard-theme");
-  
-  function applyTheme(theme) {
-    if (theme === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-      document.body.classList.add("theme-dark");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-      document.body.classList.remove("theme-dark");
-    }
-  }
-
-  if (storedTheme) {
-    applyTheme(storedTheme);
-  } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-    applyTheme("dark");
-  }
-
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener("click", function () {
-      const isDark = document.documentElement.getAttribute("data-theme") === "dark" || document.body.classList.contains("theme-dark");
-      const nextTheme = isDark ? "light" : "dark";
-      applyTheme(nextTheme);
-      localStorage.setItem("codeguard-theme", nextTheme);
-    });
-  }
-
   // 17. Student Dashboard Controller
   const studentDashboard = document.getElementById("studentDashboardApp");
   if (studentDashboard) {
@@ -575,7 +641,28 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-    // 17b. Animated metric counters (respects prefers-reduced-motion)
+    // 17b. Deterministic Daily Academic Integrity Tip (rotates daily client-side)
+    const integrityTips = [
+      "Original algorithm design reflects genuine learning. Build logic independently and cite authorized references cleanly.",
+      "Variable renaming and statement reordering does not alter AST structure or bypass semantic detection.",
+      "Discuss high-level concepts with peers, but always write your implementation and logic independently.",
+      "Using external libraries or snippets? Always add inline attribution comments specifying the original author and source.",
+      "Drafting pseudocode before typing code helps develop distinct algorithmic structure and clarity.",
+      "Reviewing fellow students' code solutions before finishing your own can lead to unintended structural plagiarism.",
+      "Clean, modular code with descriptive function comments highlights authentic problem-solving.",
+      "When using AI assistance for debugging, ensure you understand and re-implement every algorithm logic step.",
+      "Consistent coding style and self-authored helper functions provide strong signals of independent authorship.",
+      "Academic integrity protects your engineering growth. Master the data structures by building them from scratch."
+    ];
+    const tipTextEl = document.getElementById("heroIntegrityTipText");
+    if (tipTextEl) {
+      const today = new Date();
+      const startOfYear = new Date(today.getFullYear(), 0, 0);
+      const dayOfYear = Math.floor((today - startOfYear) / (1000 * 60 * 60 * 24));
+      tipTextEl.textContent = integrityTips[dayOfYear % integrityTips.length];
+    }
+
+    // 17c. Animated metric counters (respects prefers-reduced-motion)
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const metricNumbers = document.querySelectorAll(".metric-number[data-target]");
     if (!prefersReducedMotion) {
@@ -595,9 +682,23 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }, stepTime);
       });
+
+      // Animate Health Score Gauge Bar & Count-up
+      const healthScoreVal = document.querySelector(".health-score-val[data-target]");
+      const gaugeBar = document.querySelector(".health-gauge-svg .gauge-bar");
+      if (healthScoreVal && gaugeBar) {
+        const targetScore = parseInt(healthScoreVal.getAttribute("data-target"), 10) || 0;
+        const fullCircumference = 314.16;
+        const targetOffset = (314.16 - (targetScore / 100 * 314.16)).toFixed(1);
+        gaugeBar.style.strokeDashoffset = fullCircumference;
+        setTimeout(() => {
+          gaugeBar.style.transition = "stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)";
+          gaugeBar.style.strokeDashoffset = targetOffset;
+        }, 150);
+      }
     }
 
-    // 17c. Dismissible Flagged Alert Banner
+    // 17d. Dismissible Flagged Alert Banner
     const flaggedBanner = document.getElementById("flaggedAlertBanner");
     const dismissFlaggedBtn = document.getElementById("dismissFlaggedBtn");
     if (flaggedBanner && dismissFlaggedBtn) {
@@ -613,7 +714,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // 17d. SVG Donut Chart Calculation & Animation
+    // 17e. SVG Donut Chart Calculation & Animation
     const donutSvg = document.querySelector(".donut-svg");
     if (donutSvg) {
       const circumference = 439.82; // 2 * PI * 70
@@ -656,7 +757,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // 17e. Activity Bar Chart Toggle (7 Days vs 6 Weeks)
+    // 17f. Activity Bar Chart Toggle (7 Days vs 6 Weeks)
     const toggle7d = document.getElementById("toggle7dBtn");
     const toggle6w = document.getElementById("toggle6wBtn");
     const chartView7d = document.getElementById("chartView7d");
@@ -682,48 +783,115 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // 17f. Live Assignment Deadlines Countdown
-    function updateCountdowns() {
+    // 17g. Live Assignment Deadlines Countdown Helper
+    function formatCountdown(rawDeadline) {
+      if (!rawDeadline) return { text: "Open Term", urgent: false, passed: false };
+      const deadlineDate = new Date(rawDeadline.replace(" ", "T")).getTime();
       const now = new Date().getTime();
+      const diff = deadlineDate - now;
+
+      if (isNaN(deadlineDate)) return { text: "Open Term", urgent: false, passed: false };
+      if (diff <= 0) return { text: "Deadline Passed", urgent: false, passed: true };
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const isUrgent = diff < 24 * 60 * 60 * 1000;
+
+      if (days > 0) {
+        return { text: `${days}d ${hours}h left`, urgent: isUrgent, passed: false };
+      } else {
+        return { text: `${hours}h ${minutes}m left`, urgent: isUrgent, passed: false };
+      }
+    }
+
+    function updateCountdowns() {
+      // Assignment cards
       document.querySelectorAll(".deadline-countdown-badge").forEach(badge => {
-        const rawDeadline = badge.getAttribute("data-deadline");
+        const raw = badge.getAttribute("data-deadline");
         const textSpan = badge.querySelector(".countdown-text") || badge;
-        if (!rawDeadline) {
-          textSpan.textContent = "Open Term";
-          return;
-        }
+        const res = formatCountdown(raw);
+        textSpan.textContent = res.text;
+        if (res.urgent) badge.classList.add("deadline-urgent");
+        else badge.classList.remove("deadline-urgent");
+      });
 
-        const deadlineDate = new Date(rawDeadline.replace(" ", "T")).getTime();
-        const diff = deadlineDate - now;
+      // Hero deadline strip
+      document.querySelectorAll(".deadline-strip-timer").forEach(timer => {
+        const raw = timer.getAttribute("data-deadline");
+        const res = formatCountdown(raw);
+        timer.textContent = res.text;
+        if (res.urgent) timer.classList.add("deadline-urgent");
+        else timer.classList.remove("deadline-urgent");
+      });
 
-        if (isNaN(deadlineDate)) {
-          textSpan.textContent = "Open Term";
-        } else if (diff <= 0) {
-          textSpan.textContent = "Deadline Passed";
-          badge.classList.remove("deadline-urgent");
-        } else {
-          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-          if (days > 0) {
-            textSpan.textContent = `${days}d ${hours}h left`;
-          } else {
-            textSpan.textContent = `${hours}h ${minutes}m left`;
-          }
-
-          if (diff < 24 * 60 * 60 * 1000) {
-            badge.classList.add("deadline-urgent");
-          } else {
-            badge.classList.remove("deadline-urgent");
-          }
-        }
+      // Timeline timers
+      document.querySelectorAll(".timeline-timer").forEach(timer => {
+        const raw = timer.getAttribute("data-deadline");
+        const res = formatCountdown(raw);
+        timer.textContent = res.text;
+        if (res.urgent) timer.classList.add("urgent");
+        else timer.classList.remove("urgent");
       });
     }
     updateCountdowns();
     setInterval(updateCountdowns, 60000);
 
-    // 17g. Live In-Page Filtering with Topbar Search
+    // 17h. Quick Submit Dropzone
+    const quickDropzone = document.getElementById("quickDropzoneArea");
+    const quickFileInput = document.getElementById("quickFileInput");
+    if (quickDropzone && quickFileInput) {
+      function handleQuickFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            sessionStorage.setItem("codeguard_quick_file", JSON.stringify({
+              name: file.name,
+              content: e.target.result
+            }));
+          } catch (err) {}
+          window.location.href = "/student/submit";
+        };
+        reader.readAsText(file);
+      }
+
+      ["dragenter", "dragover"].forEach(eventName => {
+        quickDropzone.addEventListener(eventName, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          quickDropzone.classList.add("drag-over");
+        });
+      });
+
+      ["dragleave", "drop"].forEach(eventName => {
+        quickDropzone.addEventListener(eventName, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          quickDropzone.classList.remove("drag-over");
+        });
+      });
+
+      quickDropzone.addEventListener("drop", function (e) {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleQuickFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      quickFileInput.addEventListener("change", function () {
+        if (this.files && this.files.length > 0) {
+          handleQuickFile(this.files[0]);
+        }
+      });
+
+      quickDropzone.addEventListener("click", function (e) {
+        if (e.target !== quickFileInput) {
+          quickFileInput.click();
+        }
+      });
+    }
+
+    // 17i. Live In-Page Filtering with Topbar Search
     const searchInput = document.getElementById("globalSearchInput");
     if (searchInput) {
       searchInput.addEventListener("input", function () {
@@ -758,7 +926,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // 17h. Pending Screening Auto-Refresh (every 10s if pending submissions exist)
+    // 17j. Pending Screening Auto-Refresh (every 10s if pending submissions exist)
     const pendingCount = parseInt(studentDashboard.getAttribute("data-pending"), 10) || 0;
     if (pendingCount > 0) {
       let secondsLeft = 10;
@@ -773,5 +941,25 @@ document.addEventListener("DOMContentLoaded", function () {
       }, 1000);
     }
   }
+
+  // 18. Quick Submit Pre-fill listener on /student/submit page
+  try {
+    const quickFileRaw = sessionStorage.getItem("codeguard_quick_file");
+    if (quickFileRaw) {
+      const quickFile = JSON.parse(quickFileRaw);
+      sessionStorage.removeItem("codeguard_quick_file");
+      const pasteTabBtn = document.querySelector('[data-tab-target="tabPasteCode"]');
+      const codeTextArea = document.getElementById("code_text");
+      const titleInput = document.getElementById("title");
+      if (pasteTabBtn && codeTextArea) {
+        pasteTabBtn.click();
+        codeTextArea.value = quickFile.content;
+        codeTextArea.dispatchEvent(new Event("input", { bubbles: true }));
+        if (titleInput && !titleInput.value) {
+          titleInput.value = quickFile.name;
+        }
+      }
+    }
+  } catch (e) {}
 });
 

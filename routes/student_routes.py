@@ -139,6 +139,58 @@ def dashboard():
         ).fetchone()[0]
         activity_6w.append({"label": week_label, "week": f"W{6-w}", "count": cnt})
 
+    # Health score (100 - average combined similarity of completed submissions)
+    avg_sim_row = conn.execute("""
+        SELECT AVG(r.combined_similarity_score)
+        FROM student_submissions s
+        JOIN analysis_results r ON s.id = r.submission_id
+        WHERE s.student_id = ? AND s.analysis_status = 'completed'
+    """, (user["id"],)).fetchone()
+    avg_sim = avg_sim_row[0] if avg_sim_row else None
+    if avg_sim is not None:
+        health_score = round(max(0.0, min(100.0, 100.0 - float(avg_sim))), 1)
+    else:
+        health_score = None
+
+    # Count of active assignments not yet submitted by this student (To Submit)
+    to_submit_count = conn.execute("""
+        SELECT COUNT(*) FROM assignments a
+        WHERE a.is_active = 1
+        AND a.id NOT IN (
+            SELECT DISTINCT assignment_id FROM student_submissions WHERE student_id = ?
+        )
+    """, (user["id"],)).fetchone()[0]
+
+    # Earliest upcoming deadline among active assignments
+    next_deadline_asgn = conn.execute("""
+        SELECT id, title, subject, deadline
+        FROM assignments
+        WHERE is_active = 1 AND deadline IS NOT NULL AND deadline != ''
+        AND deadline >= datetime('now')
+        ORDER BY deadline ASC
+        LIMIT 1
+    """).fetchone()
+
+    # High-similarity submissions without any clarification submitted yet
+    flagged_unclarified = conn.execute("""
+        SELECT s.id, s.title, a.title AS asgn_title, r.combined_similarity_score
+        FROM student_submissions s
+        JOIN assignments a ON s.assignment_id = a.id
+        JOIN analysis_results r ON s.id = r.submission_id
+        WHERE s.student_id = ? AND r.similarity_label = 'High Similarity'
+        AND s.id NOT IN (SELECT submission_id FROM clarification_requests WHERE student_id = ?)
+        ORDER BY s.submitted_at DESC
+    """, (user["id"], user["id"])).fetchall()
+
+    # Upcoming timeline (upcoming assignments ordered by deadline)
+    upcoming_timeline = conn.execute("""
+        SELECT id, title, subject, deadline, allowed_languages
+        FROM assignments
+        WHERE is_active = 1 AND deadline IS NOT NULL AND deadline != ''
+        ORDER BY deadline ASC
+        LIMIT 4
+    """).fetchall()
+
     conn.close()
 
     similarity_dist = {
@@ -157,13 +209,18 @@ def dashboard():
         reviewed_sub=reviewed_sub,
         historical_count=historical_count,
         active_assignments=active_assignments_count,
+        to_submit_count=to_submit_count,
         upcoming_assignments=upcoming_assignments,
+        upcoming_timeline=upcoming_timeline,
+        next_deadline_asgn=next_deadline_asgn,
+        health_score=health_score,
         recent_submissions=recent_submissions,
         similarity_dist=similarity_dist,
         activity_data=activity_7d,
         activity_7d=activity_7d,
         activity_6w=activity_6w,
-        flagged_submissions=flagged_submissions
+        flagged_submissions=flagged_submissions,
+        flagged_unclarified=flagged_unclarified
     )
 
 @student_bp.route("/submit", methods=["GET", "POST"])
