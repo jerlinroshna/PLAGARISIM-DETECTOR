@@ -49,6 +49,18 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // 1b. Sidebar Menu Bar Collapsible Toggle
+  const menuToggle = document.getElementById("sidebarMenuToggle");
+  const navGroup = document.getElementById("studentNavGroup");
+  if (menuToggle && navGroup) {
+    menuToggle.addEventListener("click", function (e) {
+      e.stopPropagation();
+      navGroup.classList.toggle("open");
+      const isExpanded = navGroup.classList.contains("open");
+      menuToggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+    });
+  }
+
   // 2. Notification Bell & User Dropdown Popovers
   const notifBtn = document.getElementById("notifBellBtn");
   const notifMenu = document.getElementById("notifDropdownMenu");

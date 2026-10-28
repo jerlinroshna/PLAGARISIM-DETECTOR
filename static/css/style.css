@@ -155,6 +155,81 @@ body {
   padding: 14px 12px 6px 12px;
 }
 
+/* Sidebar Collapsible Menu Bar Group */
+.sidebar-menu-group {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 12px;
+  transition: all 200ms ease;
+}
+
+.sidebar-menu-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.sidebar-menu-header:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+}
+
+.menu-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-header-icon {
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+}
+
+.menu-header-title {
+  letter-spacing: 0.06em;
+}
+
+.menu-chevron {
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-menu-group.open .menu-chevron {
+  transform: rotate(180deg);
+}
+
+.sidebar-menu-group:not(.open) .sidebar-menu-header {
+  border-bottom: none;
+}
+
+.sidebar-menu-items {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-menu-group:not(.open) .sidebar-menu-items {
+  display: none;
+}
+
 /* Sidebar Menu Row */
 .nav-item {
   position: relative;
