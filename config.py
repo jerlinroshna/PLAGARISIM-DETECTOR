@@ -29,11 +29,19 @@ XAI_API_KEY = os.environ.get("XAI_API_KEY", "")
 XAI_BASE_URL = os.environ.get("XAI_BASE_URL", "https://api.x.ai/v1")
 XAI_MODEL = os.environ.get("XAI_MODEL", "grok-2-latest")
 
-DATA_DIR = os.path.join(BASE_DIR, "data")
-DATABASE_PATH = os.path.join(DATA_DIR, "plagiarism_detector.db")
-DEMO_ACCOUNTS_CSV = os.path.join(DATA_DIR, "demo_accounts.csv")
+# Serverless / Vercel environment detection
+IS_VERCEL = bool(os.environ.get("VERCEL"))
 
-UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+if IS_VERCEL:
+    DATA_DIR = "/tmp/data"
+    UPLOADS_DIR = "/tmp/uploads"
+else:
+    DATA_DIR = os.path.join(BASE_DIR, "data")
+    UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+
+DATABASE_PATH = os.path.join(DATA_DIR, "plagiarism_detector.db")
+DEMO_ACCOUNTS_CSV = os.path.join(BASE_DIR, "data", "demo_accounts.csv")
+
 UPLOADS_SUBMISSIONS_DIR = os.path.join(UPLOADS_DIR, "submissions")
 UPLOADS_HISTORICAL_DIR = os.path.join(UPLOADS_DIR, "historical")
 
