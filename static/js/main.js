@@ -529,5 +529,249 @@ document.addEventListener("DOMContentLoaded", function () {
       if (floatingTooltip) floatingTooltip.classList.remove("visible");
     });
   }
+
+  // 16. Theme Mode Toggle (Light / Dark) with localStorage persistence
+  const themeToggleBtn = document.getElementById("themeToggleBtn");
+  const storedTheme = localStorage.getItem("codeguard-theme");
+  
+  function applyTheme(theme) {
+    if (theme === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+      document.body.classList.add("theme-dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+      document.body.classList.remove("theme-dark");
+    }
+  }
+
+  if (storedTheme) {
+    applyTheme(storedTheme);
+  } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    applyTheme("dark");
+  }
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", function () {
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark" || document.body.classList.contains("theme-dark");
+      const nextTheme = isDark ? "light" : "dark";
+      applyTheme(nextTheme);
+      localStorage.setItem("codeguard-theme", nextTheme);
+    });
+  }
+
+  // 17. Student Dashboard Controller
+  const studentDashboard = document.getElementById("studentDashboardApp");
+  if (studentDashboard) {
+    // 17a. Time-based dynamic greeting
+    const greetingText = document.getElementById("heroGreetingText");
+    if (greetingText) {
+      const hour = new Date().getHours();
+      if (hour < 12) {
+        greetingText.textContent = "Good Morning";
+      } else if (hour < 17) {
+        greetingText.textContent = "Good Afternoon";
+      } else {
+        greetingText.textContent = "Good Evening";
+      }
+    }
+
+    // 17b. Animated metric counters (respects prefers-reduced-motion)
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const metricNumbers = document.querySelectorAll(".metric-number[data-target]");
+    if (!prefersReducedMotion) {
+      metricNumbers.forEach(el => {
+        const target = parseInt(el.getAttribute("data-target"), 10) || 0;
+        if (target === 0) return;
+        let current = 0;
+        const duration = 600;
+        const stepTime = Math.max(16, Math.floor(duration / target));
+        const timer = setInterval(() => {
+          current += Math.ceil(target / (duration / stepTime));
+          if (current >= target) {
+            el.textContent = target;
+            clearInterval(timer);
+          } else {
+            el.textContent = current;
+          }
+        }, stepTime);
+      });
+    }
+
+    // 17c. Dismissible Flagged Alert Banner
+    const flaggedBanner = document.getElementById("flaggedAlertBanner");
+    const dismissFlaggedBtn = document.getElementById("dismissFlaggedBtn");
+    if (flaggedBanner && dismissFlaggedBtn) {
+      if (sessionStorage.getItem("codeguard-flagged-dismissed") === "true") {
+        flaggedBanner.style.display = "none";
+      }
+      dismissFlaggedBtn.addEventListener("click", function () {
+        flaggedBanner.style.opacity = "0";
+        setTimeout(() => {
+          flaggedBanner.style.display = "none";
+          sessionStorage.setItem("codeguard-flagged-dismissed", "true");
+        }, 200);
+      });
+    }
+
+    // 17d. SVG Donut Chart Calculation & Animation
+    const donutSvg = document.querySelector(".donut-svg");
+    if (donutSvg) {
+      const circumference = 439.82; // 2 * PI * 70
+      const segments = [
+        document.querySelector(".segment-low"),
+        document.querySelector(".segment-medium"),
+        document.querySelector(".segment-high")
+      ].filter(Boolean);
+
+      let accumulatedOffset = 0;
+      segments.forEach(seg => {
+        const pct = parseFloat(seg.getAttribute("data-percent")) || 0;
+        const strokeLength = (pct / 100) * circumference;
+        seg.style.strokeDasharray = `${strokeLength} ${circumference - strokeLength}`;
+        seg.style.strokeDashoffset = -accumulatedOffset;
+        accumulatedOffset += strokeLength;
+
+        // Hover tooltip
+        const tooltip = document.getElementById("donutTooltip");
+        if (tooltip) {
+          seg.addEventListener("mouseenter", function (e) {
+            const label = this.getAttribute("data-label");
+            const cnt = this.getAttribute("data-count");
+            const p = this.getAttribute("data-percent");
+            tooltip.textContent = `${label}: ${cnt} (${p}%)`;
+            tooltip.style.display = "block";
+          });
+          seg.addEventListener("mousemove", function (e) {
+            const wrapper = document.querySelector(".donut-svg-wrapper");
+            if (wrapper) {
+              const rect = wrapper.getBoundingClientRect();
+              tooltip.style.left = (e.clientX - rect.left + 10) + "px";
+              tooltip.style.top = (e.clientY - rect.top - 20) + "px";
+            }
+          });
+          seg.addEventListener("mouseleave", function () {
+            tooltip.style.display = "none";
+          });
+        }
+      });
+    }
+
+    // 17e. Activity Bar Chart Toggle (7 Days vs 6 Weeks)
+    const toggle7d = document.getElementById("toggle7dBtn");
+    const toggle6w = document.getElementById("toggle6wBtn");
+    const chartView7d = document.getElementById("chartView7d");
+    const chartView6w = document.getElementById("chartView6w");
+
+    if (toggle7d && toggle6w && chartView7d && chartView6w) {
+      toggle7d.addEventListener("click", function () {
+        toggle7d.classList.add("active");
+        toggle7d.setAttribute("aria-selected", "true");
+        toggle6w.classList.remove("active");
+        toggle6w.setAttribute("aria-selected", "false");
+        chartView7d.style.display = "block";
+        chartView6w.style.display = "none";
+      });
+
+      toggle6w.addEventListener("click", function () {
+        toggle6w.classList.add("active");
+        toggle6w.setAttribute("aria-selected", "true");
+        toggle7d.classList.remove("active");
+        toggle7d.setAttribute("aria-selected", "false");
+        chartView7d.style.display = "none";
+        chartView6w.style.display = "block";
+      });
+    }
+
+    // 17f. Live Assignment Deadlines Countdown
+    function updateCountdowns() {
+      const now = new Date().getTime();
+      document.querySelectorAll(".deadline-countdown-badge").forEach(badge => {
+        const rawDeadline = badge.getAttribute("data-deadline");
+        const textSpan = badge.querySelector(".countdown-text") || badge;
+        if (!rawDeadline) {
+          textSpan.textContent = "Open Term";
+          return;
+        }
+
+        const deadlineDate = new Date(rawDeadline.replace(" ", "T")).getTime();
+        const diff = deadlineDate - now;
+
+        if (isNaN(deadlineDate)) {
+          textSpan.textContent = "Open Term";
+        } else if (diff <= 0) {
+          textSpan.textContent = "Deadline Passed";
+          badge.classList.remove("deadline-urgent");
+        } else {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+          if (days > 0) {
+            textSpan.textContent = `${days}d ${hours}h left`;
+          } else {
+            textSpan.textContent = `${hours}h ${minutes}m left`;
+          }
+
+          if (diff < 24 * 60 * 60 * 1000) {
+            badge.classList.add("deadline-urgent");
+          } else {
+            badge.classList.remove("deadline-urgent");
+          }
+        }
+      });
+    }
+    updateCountdowns();
+    setInterval(updateCountdowns, 60000);
+
+    // 17g. Live In-Page Filtering with Topbar Search
+    const searchInput = document.getElementById("globalSearchInput");
+    if (searchInput) {
+      searchInput.addEventListener("input", function () {
+        const query = this.value.trim().toLowerCase();
+        
+        // Filter Assignment tiles
+        document.querySelectorAll(".assignment-tile").forEach(tile => {
+          const title = tile.getAttribute("data-asgn-title") || "";
+          const subj = tile.getAttribute("data-asgn-subj") || "";
+          if (!query || title.includes(query) || subj.includes(query)) {
+            tile.style.display = "flex";
+          } else {
+            tile.style.display = "none";
+          }
+        });
+
+        // Filter Recent Submissions rows
+        document.querySelectorAll(".submission-row").forEach(row => {
+          const text = row.getAttribute("data-search-text") || "";
+          if (!query || text.includes(query)) {
+            row.style.display = "";
+          } else {
+            row.style.display = "none";
+          }
+        });
+      });
+
+      searchInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && this.value.trim() !== "") {
+          window.location.href = `/student/submissions?q=${encodeURIComponent(this.value.trim())}`;
+        }
+      });
+    }
+
+    // 17h. Pending Screening Auto-Refresh (every 10s if pending submissions exist)
+    const pendingCount = parseInt(studentDashboard.getAttribute("data-pending"), 10) || 0;
+    if (pendingCount > 0) {
+      let secondsLeft = 10;
+      const countdownSpan = document.getElementById("queueCountdown");
+      const pollTimer = setInterval(() => {
+        secondsLeft -= 1;
+        if (countdownSpan) countdownSpan.textContent = secondsLeft;
+        if (secondsLeft <= 0) {
+          clearInterval(pollTimer);
+          window.location.reload();
+        }
+      }, 1000);
+    }
+  }
 });
 

@@ -34,9 +34,10 @@
           Select Assignment <span style="color: #ef4444;">*</span>
         </label>
         <select name="assignment_id" id="assignment_id" class="form-control" required style="font-size: 0.9rem; padding: 10px 14px; border-radius: 8px;">
-          <option value="" disabled selected>-- Choose an active assignment --</option>
+          <option value="" disabled {% if not request.args.get('assignment_id') %}selected{% endif %}>-- Choose an active assignment --</option>
           {% for asgn in assignments %}
             <option value="{{ asgn.id }}"
+                    {% if request.args.get('assignment_id')|int == asgn.id %}selected{% endif %}
                     data-subject="{{ asgn.subject }}"
                     data-deadline="{{ asgn.deadline or 'Open' }}"
                     data-allowed="{{ asgn.allowed_languages }}">

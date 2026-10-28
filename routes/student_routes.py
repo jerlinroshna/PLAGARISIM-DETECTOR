@@ -2,7 +2,7 @@ import os
 import csv
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, Response
 from auth import login_required, role_required, get_current_user
@@ -48,12 +48,23 @@ def dashboard():
     ).fetchone()[0]
 
     upcoming_assignments = conn.execute("""
-        SELECT id, title, subject, description, allowed_languages, deadline, is_active
-        FROM assignments
-        WHERE is_active = 1
-        ORDER BY created_at DESC
-        LIMIT 4
-    """).fetchall()
+        SELECT a.id, a.title, a.subject, a.description, a.allowed_languages, a.deadline, a.is_active,
+               sub.id AS submission_id, sub.analysis_status, res.combined_similarity_score, res.similarity_label
+        FROM assignments a
+        LEFT JOIN (
+            SELECT s1.id, s1.assignment_id, s1.analysis_status
+            FROM student_submissions s1
+            WHERE s1.student_id = ?
+            AND s1.id = (
+                SELECT MAX(s2.id) FROM student_submissions s2
+                WHERE s2.assignment_id = s1.assignment_id AND s2.student_id = ?
+            )
+        ) sub ON a.id = sub.assignment_id
+        LEFT JOIN analysis_results res ON sub.id = res.submission_id
+        WHERE a.is_active = 1
+        ORDER BY a.created_at DESC
+        LIMIT 6
+    """, (user["id"], user["id"])).fetchall()
 
     # Reviewed count for this student
     reviewed_sub = conn.execute("""
@@ -97,16 +108,36 @@ def dashboard():
         LIMIT 5
     """, (user["id"],)).fetchall()
 
-    # Activity calculation: submissions grouped by date
-    activity_rows = conn.execute("""
-        SELECT SUBSTR(submitted_at, 1, 10) as sub_date, COUNT(*) as cnt
-        FROM student_submissions
-        WHERE student_id = ?
-        GROUP BY sub_date
-        ORDER BY sub_date ASC
-        LIMIT 7
-    """, (user["id"],)).fetchall()
-    activity_data = [{"date": row["sub_date"], "count": row["cnt"]} for row in activity_rows]
+    # High similarity flagged submissions (for dismissible alert)
+    flagged_submissions = [s for s in recent_submissions if s["similarity_label"] == "High Similarity"]
+
+    # 7-day daily activity (last 7 days)
+    today = datetime.now()
+    activity_7d = []
+    for i in range(6, -1, -1):
+        day_date = today - timedelta(days=i)
+        day_str = day_date.strftime("%Y-%m-%d")
+        day_label = day_date.strftime("%b %d")
+        day_name = day_date.strftime("%a")
+        cnt = conn.execute(
+            "SELECT COUNT(*) FROM student_submissions WHERE student_id = ? AND SUBSTR(submitted_at, 1, 10) = ?",
+            (user["id"], day_str)
+        ).fetchone()[0]
+        activity_7d.append({"date": day_str, "label": day_label, "day": day_name, "count": cnt})
+
+    # 6-week activity
+    activity_6w = []
+    for w in range(5, -1, -1):
+        week_end = today - timedelta(days=w * 7)
+        week_start = week_end - timedelta(days=6)
+        start_str = week_start.strftime("%Y-%m-%d")
+        end_str = week_end.strftime("%Y-%m-%d")
+        week_label = f"{week_start.strftime('%b %d')}"
+        cnt = conn.execute(
+            "SELECT COUNT(*) FROM student_submissions WHERE student_id = ? AND SUBSTR(submitted_at, 1, 10) BETWEEN ? AND ?",
+            (user["id"], start_str, end_str)
+        ).fetchone()[0]
+        activity_6w.append({"label": week_label, "week": f"W{6-w}", "count": cnt})
 
     conn.close()
 
@@ -129,7 +160,10 @@ def dashboard():
         upcoming_assignments=upcoming_assignments,
         recent_submissions=recent_submissions,
         similarity_dist=similarity_dist,
-        activity_data=activity_data
+        activity_data=activity_7d,
+        activity_7d=activity_7d,
+        activity_6w=activity_6w,
+        flagged_submissions=flagged_submissions
     )
 
 @student_bp.route("/submit", methods=["GET", "POST"])
@@ -746,7 +780,11 @@ def mark_all_notifications_read():
 @login_required
 @role_required("student")
 def academic_integrity():
-    return redirect(url_for("student.dashboard"))
+    user = get_current_user()
+    return render_template(
+        "student/academic_integrity.html",
+        user=user
+    )
 
 @student_bp.route("/profile")
 @login_required
