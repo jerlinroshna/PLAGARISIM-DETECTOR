@@ -457,11 +457,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // 14. Login Role Selector helper (preserved)
+  // 14. Login Role Selector helper (clean toggle without auto-fill)
   const roleButtons = document.querySelectorAll(".role-toggle-btn");
   const roleInput = document.getElementById("login-role-input");
-  const usernameInput = document.getElementById("username");
-  const passwordInput = document.getElementById("password");
   if (roleButtons.length > 0 && roleInput) {
     roleButtons.forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -469,19 +467,55 @@ document.addEventListener("DOMContentLoaded", function () {
         this.classList.add("active");
         const role = this.getAttribute("data-role");
         roleInput.value = role;
-
-        if (usernameInput && passwordInput) {
-          if (!usernameInput.value || usernameInput.value === "STU001" || usernameInput.value === "FAC001") {
-            if (role === "faculty") {
-              usernameInput.value = "FAC001";
-              passwordInput.value = "Faculty@123";
-            } else {
-              usernameInput.value = "STU001";
-              passwordInput.value = "Student@123";
-            }
-          }
-        }
       });
     });
   }
+
+  // 15. Dynamic Floating Tooltip for Student Mini Sidebar (Immune to overflow clipping)
+  const miniSidebar = document.querySelector(".sidebar-student-mini");
+  if (miniSidebar) {
+    let floatingTooltip = document.getElementById("sidebar-floating-tooltip");
+    if (!floatingTooltip) {
+      floatingTooltip = document.createElement("div");
+      floatingTooltip.id = "sidebar-floating-tooltip";
+      floatingTooltip.className = "sidebar-floating-tooltip";
+      document.body.appendChild(floatingTooltip);
+    }
+
+    const navItems = miniSidebar.querySelectorAll(".nav-item");
+    navItems.forEach(function (item) {
+      const tooltipText = item.getAttribute("data-tooltip") || 
+                          item.getAttribute("title") ||
+                          (item.querySelector(".nav-label") ? item.querySelector(".nav-label").textContent.trim() : "");
+      if (!tooltipText) return;
+
+      // Remove title to prevent duplicate native browser tooltip
+      item.removeAttribute("title");
+
+      item.addEventListener("mouseenter", function () {
+        const rect = item.getBoundingClientRect();
+        floatingTooltip.textContent = tooltipText;
+        floatingTooltip.style.top = (rect.top + rect.height / 2) + "px";
+        floatingTooltip.style.left = (rect.right + 12) + "px";
+        floatingTooltip.classList.add("visible");
+      });
+
+      item.addEventListener("mouseleave", function () {
+        floatingTooltip.classList.remove("visible");
+      });
+
+      item.addEventListener("click", function () {
+        floatingTooltip.classList.remove("visible");
+      });
+    });
+
+    window.addEventListener("scroll", function () {
+      if (floatingTooltip) floatingTooltip.classList.remove("visible");
+    }, true);
+
+    window.addEventListener("resize", function () {
+      if (floatingTooltip) floatingTooltip.classList.remove("visible");
+    });
+  }
 });
+

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Academic Portal{% endblock %} - CodeGuard Academic Integrity</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -33,31 +33,31 @@
       <nav class="sidebar-nav">
         {% if current_user.role == 'student' %}
           <div class="nav-section-title">Core Navigation</div>
-          <a href="{{ url_for('student.dashboard') }}" class="nav-item {% if request.endpoint == 'student.dashboard' %}active{% endif %}">
+          <a href="{{ url_for('student.dashboard') }}" class="nav-item {% if request.endpoint == 'student.dashboard' %}active{% endif %}" data-tooltip="Dashboard" title="Dashboard">
             <span class="nav-icon">
               <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
             </span>
             <span class="nav-label">Dashboard</span>
           </a>
-          <a href="{{ url_for('student.submit') }}" class="nav-item {% if request.endpoint == 'student.submit' %}active{% endif %}">
+          <a href="{{ url_for('student.submit') }}" class="nav-item {% if request.endpoint == 'student.submit' %}active{% endif %}" data-tooltip="Submit Code" title="Submit Code">
             <span class="nav-icon">
               <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
             </span>
             <span class="nav-label">Submit Code</span>
           </a>
-          <a href="{{ url_for('student.submissions') }}" class="nav-item {% if request.endpoint in ['student.submissions', 'student.submission_detail'] %}active{% endif %}">
+          <a href="{{ url_for('student.submissions') }}" class="nav-item {% if request.endpoint in ['student.submissions', 'student.submission_detail'] %}active{% endif %}" data-tooltip="My Submissions" title="My Submissions">
             <span class="nav-icon">
               <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
             </span>
             <span class="nav-label">My Submissions</span>
           </a>
-          <a href="{{ url_for('student.historical') }}" class="nav-item {% if request.endpoint == 'student.historical' %}active{% endif %}">
+          <a href="{{ url_for('student.historical') }}" class="nav-item {% if request.endpoint == 'student.historical' %}active{% endif %}" data-tooltip="Historical References" title="Historical References">
             <span class="nav-icon">
               <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
             </span>
             <span class="nav-label">Historical References</span>
           </a>
-          <a href="{{ url_for('student.reports') }}" class="nav-item {% if request.endpoint == 'student.reports' %}active{% endif %}">
+          <a href="{{ url_for('student.reports') }}" class="nav-item {% if request.endpoint == 'student.reports' %}active{% endif %}" data-tooltip="Reports" title="Reports">
             <span class="nav-icon">
               <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
             </span>
@@ -107,7 +107,7 @@
 
         <hr class="sidebar-divider">
 
-        <a href="{{ url_for('auth.logout') }}" class="nav-item nav-logout">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item nav-logout" data-tooltip="Logout" title="Logout">
           <span class="nav-icon">
             <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
           </span>
@@ -251,7 +251,7 @@
     </div>
   {% endif %}
 
-  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}?v=3.2"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
