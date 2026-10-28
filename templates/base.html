@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Academic Portal{% endblock %} - CodeGuard Academic Integrity</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.4">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -27,6 +27,7 @@
             {% if current_user.role == 'student' %}Student Workspace{% else %}Faculty Workspace{% endif %}
           </div>
         </div>
+        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">&times;</button>
       </div>
 
       <nav class="sidebar-nav">
@@ -146,6 +147,7 @@
         </div>
       </div>
     </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <!-- Main Wrapper -->
     <div class="main-wrapper">
@@ -153,7 +155,7 @@
       <header class="topbar">
         <div class="topbar-left">
           <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation menu">
-            &#9776;
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
           </button>
           <div class="portal-badge-container">
             <div class="breadcrumb-nav">

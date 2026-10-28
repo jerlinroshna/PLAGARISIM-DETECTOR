@@ -1,19 +1,51 @@
 // Source-Code Plagiarism Detector - Student Portal & College Portal Interactions
 
 document.addEventListener("DOMContentLoaded", function () {
-  // 1. Mobile Sidebar Toggle
+  // 1. Mobile Sidebar Drawer & Backdrop
   const mobileMenuBtn = document.getElementById("mobileMenuBtn");
   const sidebar = document.getElementById("appSidebar");
+  const sidebarBackdrop = document.getElementById("sidebarBackdrop");
+  const sidebarCloseBtn = document.getElementById("sidebarCloseBtn");
 
-  if (mobileMenuBtn && sidebar) {
+  function openSidebar() {
+    if (sidebar) sidebar.classList.add("mobile-open");
+    if (sidebarBackdrop) sidebarBackdrop.classList.add("active");
+    document.body.classList.add("sidebar-open");
+  }
+
+  function closeSidebar() {
+    if (sidebar) sidebar.classList.remove("mobile-open");
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
+    document.body.classList.remove("sidebar-open");
+  }
+
+  if (mobileMenuBtn) {
     mobileMenuBtn.addEventListener("click", function (e) {
       e.stopPropagation();
-      sidebar.classList.toggle("mobile-open");
-    });
-    document.addEventListener("click", function (e) {
-      if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-        sidebar.classList.remove("mobile-open");
+      if (sidebar && sidebar.classList.contains("mobile-open")) {
+        closeSidebar();
+      } else {
+        openSidebar();
       }
+    });
+  }
+
+  if (sidebarCloseBtn) {
+    sidebarCloseBtn.addEventListener("click", closeSidebar);
+  }
+
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener("click", closeSidebar);
+  }
+
+  // Auto-close drawer when clicking any nav link on mobile screens
+  if (sidebar) {
+    sidebar.querySelectorAll(".nav-item").forEach(link => {
+      link.addEventListener("click", function () {
+        if (window.innerWidth <= 1024) {
+          closeSidebar();
+        }
+      });
     });
   }
 
