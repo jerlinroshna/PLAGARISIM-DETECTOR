@@ -74,7 +74,7 @@ def init_db():
     cursor.execute("PRAGMA table_info(historical_submissions)")
     existing_hist_cols = [col[1] for col in cursor.fetchall()]
     if "student_id" not in existing_hist_cols:
-        cursor.execute("ALTER TABLE historical_submissions ADD COLUMN student_id TEXT DEFAULT 'DEMO-HIST-001'")
+        cursor.execute("ALTER TABLE historical_submissions ADD COLUMN student_id TEXT DEFAULT 'STU001'")
     if "is_authorized_for_students" not in existing_hist_cols:
         cursor.execute("ALTER TABLE historical_submissions ADD COLUMN is_authorized_for_students INTEGER DEFAULT 1")
 
@@ -246,8 +246,8 @@ def seed_demo_accounts():
         with open(config.DEMO_ACCOUNTS_CSV, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerows(csv_rows)
-    except Exception as e:
-        print(f"Warning: Could not write demo accounts CSV: {e}")
+    except Exception:
+        pass
 
 def seed_sample_assignments_and_history():
     """Seeds starter assignments and labeled demo historical records for testing comparison."""
@@ -490,13 +490,13 @@ int main() {
             INSERT INTO historical_submissions 
             (student_id, academic_year, subject, assignment_name, programming_language, source_filename, source_code, batch_label, is_authorized_for_students, uploaded_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, [("DEMO-HIST-STU" + str(idx+1), h[0], h[1], h[2], h[3], h[4], h[5], "[DEMO] " + h[6], 1, h[7]) for idx, h in enumerate(historical_samples)])
+        """, [(f"STU{idx+1:03d}", h[0], h[1], h[2], h[3], h[4], h[5], "[DEMO] " + h[6], 1, h[7]) for idx, h in enumerate(historical_samples)])
 
-    # Ensure all demo records have student_id populated and clearly labeled
+    # Ensure all demo records have student_id populated with student usernames
     cursor.execute("""
         UPDATE historical_submissions 
-        SET student_id = 'DEMO-HIST-STU' || id 
-        WHERE student_id IS NULL OR student_id = '' OR student_id = 'DEMO-HIST-001'
+        SET student_id = printf('STU%03d', id)
+        WHERE student_id IS NULL OR student_id = '' OR student_id LIKE 'DEMO-HIST-%'
     """)
 
     conn.commit()

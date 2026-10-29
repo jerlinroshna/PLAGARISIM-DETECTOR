@@ -217,107 +217,12 @@ def submissions():
 @login_required
 @role_required("faculty")
 def submit():
-    user = get_current_user()
-    conn = database.get_db_connection()
+    """Faculty code submission is permanently disabled per institutional role policy."""
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return {"error": "Forbidden", "message": "Faculty code submissions are disabled. Plagiarism screening is restricted to students."}, 403
+    flash("Faculty code submissions are disabled. Code submissions are restricted to students.", "warning")
+    return abort(403)
 
-    if request.method == "POST":
-        assignment_id = request.form.get("assignment_id")
-        title = request.form.get("title", "").strip() or "Faculty Test Code"
-        language = request.form.get("programming_language", "").lower().strip()
-        code_input = request.form.get("code_text", "").strip()
-        uploaded_file = request.files.get("code_file")
-
-        asgn = conn.execute(
-            "SELECT id, title, allowed_languages, is_active FROM assignments WHERE id = ?",
-            (assignment_id,)
-        ).fetchone()
-
-        if not asgn:
-            flash("Selected assignment is not valid.", "danger")
-            conn.close()
-            return redirect(url_for("faculty.submit"))
-
-        allowed_langs = [l.strip().lower() for l in asgn["allowed_languages"].split(",")]
-
-        source_code = ""
-        source_filename = "faculty_test_code"
-
-        if uploaded_file and uploaded_file.filename != "":
-            raw_filename = secure_filename(uploaded_file.filename)
-            ext = raw_filename.rsplit(".", 1)[-1].lower() if "." in raw_filename else ""
-
-            if ext not in config.ALLOWED_EXTENSIONS:
-                flash(
-                    f"Unsupported file extension '.{ext}'. Supported extensions: {', '.join(config.ALLOWED_EXTENSIONS.keys())}.",
-                    "danger"
-                )
-                conn.close()
-                return redirect(url_for("faculty.submit"))
-
-            detected_lang = config.ALLOWED_EXTENSIONS[ext]
-            if not language or language == "auto":
-                language = detected_lang
-            source_filename = raw_filename
-            try:
-                source_code = uploaded_file.read().decode("utf-8", errors="replace")
-            except Exception as e:
-                flash(f"Error reading uploaded file: {str(e)}", "danger")
-                conn.close()
-                return redirect(url_for("faculty.submit"))
-        else:
-            if not code_input:
-                flash("Please upload a file or paste source code.", "danger")
-                conn.close()
-                return redirect(url_for("faculty.submit"))
-            source_code = code_input
-            if not language or language == "auto":
-                flash("Please select a programming language for pasted code.", "danger")
-                conn.close()
-                return redirect(url_for("faculty.submit"))
-            source_filename = f"test_submission.{language}"
-
-        if not source_code.strip():
-            flash("Submission cannot be empty. Please provide valid source code.", "danger")
-            conn.close()
-            return redirect(url_for("faculty.submit"))
-
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO student_submissions 
-            (student_id, assignment_id, title, programming_language, source_filename, source_code, analysis_status)
-            VALUES (?, ?, ?, ?, ?, ?, 'pending')
-        """, (user["id"], assignment_id, title, language, source_filename, source_code))
-        submission_id = cursor.lastrowid
-        conn.commit()
-
-        try:
-            save_path = os.path.join(config.UPLOADS_SUBMISSIONS_DIR, f"sub_{submission_id}_{source_filename}")
-            with open(save_path, "w", encoding="utf-8") as f:
-                f.write(source_code)
-        except Exception:
-            pass
-
-        conn.close()
-
-        try:
-            CodeComparator.analyze_submission(submission_id)
-        except Exception as e:
-            print(f"Error analyzing submission {submission_id}: {e}")
-
-        flash("Code submitted successfully and screened against the historical repository.", "success")
-        return redirect(url_for("faculty.analysis_detail", sub_id=submission_id))
-
-    assignments = conn.execute(
-        "SELECT id, title, subject, allowed_languages, deadline FROM assignments ORDER BY created_at DESC"
-    ).fetchall()
-    conn.close()
-
-    return render_template(
-        "faculty/submit.html",
-        user=user,
-        assignments=assignments,
-        languages=config.LANGUAGE_DISPLAY_NAMES
-    )
 
 @faculty_bp.route("/historical", methods=["GET", "POST"])
 @login_required
@@ -377,6 +282,16 @@ def historical_repo():
                 return redirect(url_for("faculty.historical_repo"))
             source_filename = f"historical_{assignment_name.replace(' ', '_')}.{language}"
 
+                # Prevent duplicate identical submission for same student, assignment, year, and filename
+        existing_dup = conn.execute("""
+            SELECT id FROM historical_submissions 
+            WHERE student_id = ? AND assignment_name = ? AND academic_year = ? AND source_filename = ?
+        """, (student_id_input, assignment_name, academic_year, source_filename)).fetchone()
+        if existing_dup:
+            flash(f"A historical submission for Student '{student_id_input}' and assignment '{assignment_name}' already exists (ID #{existing_dup['id']}). Duplicate entry skipped.", "warning")
+            conn.close()
+            return redirect(url_for("faculty.historical_repo"))
+
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO historical_submissions 
@@ -402,6 +317,7 @@ def historical_repo():
     filter_year = request.args.get("year", "").strip()
     filter_subject = request.args.get("subject", "").strip()
     filter_lang = request.args.get("language", "").strip()
+    filter_auth = request.args.get("authorized", "").strip()
     search_q = request.args.get("search", "").strip()
 
     query = """
@@ -426,6 +342,11 @@ def historical_repo():
         query += " AND LOWER(h.programming_language) = ?"
         params.append(filter_lang.lower())
 
+    if filter_auth == "1":
+        query += " AND h.is_authorized_for_students = 1"
+    elif filter_auth == "0":
+        query += " AND h.is_authorized_for_students = 0"
+
     if search_q:
         query += " AND (h.assignment_name LIKE ? OR h.subject LIKE ? OR h.student_id LIKE ?)"
         params.extend([f"%{search_q}%", f"%{search_q}%", f"%{search_q}%"])
@@ -447,6 +368,7 @@ def historical_repo():
         filter_year=filter_year,
         filter_subject=filter_subject,
         filter_lang=filter_lang,
+        filter_auth=filter_auth,
         search_q=search_q,
         languages=config.LANGUAGE_DISPLAY_NAMES
     )

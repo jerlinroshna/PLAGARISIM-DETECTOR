@@ -626,13 +626,15 @@ def historical():
     filter_lang = request.args.get("language", "").strip()
     search_q = request.args.get("search", "").strip()
 
+    # Strict data isolation: students see ONLY their own authorized historical submissions
     query = """
-        SELECT id, academic_year, subject, assignment_name, programming_language,
+        SELECT id, student_id, academic_year, subject, assignment_name, programming_language,
                source_filename, source_code, batch_label, created_at
         FROM historical_submissions
         WHERE is_authorized_for_students = 1
+          AND (student_id = ? OR student_id = ? OR (? = 'demo_student' AND student_id IN ('STU001', 'demo_student', 'DEMO-HIST-STU1')))
     """
-    params = []
+    params = [user["username"], str(user["id"]), user["username"]]
 
     if filter_year:
         query += " AND academic_year = ?"
@@ -650,13 +652,19 @@ def historical():
 
     records = conn.execute(query, params).fetchall()
 
-    years = conn.execute(
-        "SELECT DISTINCT academic_year FROM historical_submissions WHERE is_authorized_for_students = 1 ORDER BY academic_year DESC"
-    ).fetchall()
+    years = conn.execute("""
+        SELECT DISTINCT academic_year FROM historical_submissions
+        WHERE is_authorized_for_students = 1
+          AND (student_id = ? OR student_id = ? OR (? = 'demo_student' AND student_id IN ('STU001', 'demo_student', 'DEMO-HIST-STU1')))
+        ORDER BY academic_year DESC
+    """, (user["username"], str(user["id"]), user["username"])).fetchall()
 
-    subjects = conn.execute(
-        "SELECT DISTINCT subject FROM historical_submissions WHERE is_authorized_for_students = 1 ORDER BY subject"
-    ).fetchall()
+    subjects = conn.execute("""
+        SELECT DISTINCT subject FROM historical_submissions
+        WHERE is_authorized_for_students = 1
+          AND (student_id = ? OR student_id = ? OR (? = 'demo_student' AND student_id IN ('STU001', 'demo_student', 'DEMO-HIST-STU1')))
+        ORDER BY subject
+    """, (user["username"], str(user["id"]), user["username"])).fetchall()
 
     conn.close()
 

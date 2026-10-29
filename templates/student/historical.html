@@ -10,10 +10,10 @@
   <div style="display: flex; justify-content: space-between; align-items: flex-start;">
     <div>
       <h2 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
-        Authorized Historical References
+        My Authorized Historical Submissions
       </h2>
       <p style="font-size: 0.86rem; color: #64748b; margin: 0;">
-        Browse instructor-approved reference implementations made available for academic study and algorithmic comparison.
+        Browse your instructor-authorized historical code submissions and approved reference records.
       </p>
     </div>
     <span class="badge" style="background: #ecfdf5; color: #065f46; font-weight: 600; padding: 6px 12px;">
@@ -75,8 +75,9 @@
           </div>
 
           <div style="font-size: 0.76rem; color: #64748b; line-height: 1.4; margin-bottom: 12px;">
+            Student ID: <strong>{{ r.student_id or user.username }}</strong><br>
             Filename: <code>{{ r.source_filename }}</code><br>
-            Reference Type: <strong>{{ r.batch_label or 'Benchmark Solution' }}</strong>
+            Record Type: <strong>{{ r.batch_label or 'Authorized Submission' }}</strong>
           </div>
         </div>
 
@@ -92,12 +93,12 @@
 {% else %}
   <div class="empty-state-card">
     <div class="empty-state-icon">&#128218;</div>
-    <div class="empty-state-title">No authorized reference implementations found</div>
+    <div class="empty-state-title">No authorized historical records found</div>
     <div class="empty-state-desc">
       {% if search_q or filter_year or filter_lang %}
-        No reference implementations match your filters. Try resetting the criteria.
+        No historical submissions match your filter criteria. Try resetting the criteria.
       {% else %}
-        No authorized benchmark reference implementations have been published yet for academic study.
+        You do not have any authorized historical submissions recorded at this time.
       {% endif %}
     </div>
   </div>

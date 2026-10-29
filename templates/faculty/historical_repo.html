@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Historical Code Repository{% endblock %}
-{% block page_title %}Historical Code Repository (Past Academic Years){% endblock %}
+{% block page_title %}Historical Code Repository (Benchmark Submissions){% endblock %}
 
 {% block content %}
 <!-- Top Stats & Information Banner -->
@@ -9,7 +9,7 @@
   <div>
     <div class="banner-title">Archived Student Submissions Database</div>
     <div class="banner-desc">
-      Manage benchmark code submissions from previous academic years used for historical plagiarism comparison.
+      Manage benchmark code submissions across academic years used for AST structural plagiarism comparison.
     </div>
   </div>
   <div>
@@ -22,13 +22,14 @@
 <div style="display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start;">
   <!-- Left Column: Search, Filter & Records Table -->
   <div class="card">
-    <div class="card-header">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
       <h2 class="card-title">Historical Records Catalog</h2>
+      <span style="font-size: 0.78rem; color: var(--text-secondary);">Distinct submissions preserved independently</span>
     </div>
 
     <!-- Filters -->
     <form method="GET" action="{{ url_for('faculty.historical_repo') }}" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-      <div style="flex: 1; min-width: 140px;">
+      <div style="flex: 1; min-width: 130px;">
         <select class="form-control" name="year">
           <option value="">All Academic Years</option>
           {% for y in years %}
@@ -48,8 +49,16 @@
         </select>
       </div>
 
+      <div style="flex: 1; min-width: 140px;">
+        <select class="form-control" name="authorized">
+          <option value="">All Access Types</option>
+          <option value="1" {% if filter_auth == '1' %}selected{% endif %}>Authorized for Students</option>
+          <option value="0" {% if filter_auth == '0' %}selected{% endif %}>Faculty Only</option>
+        </select>
+      </div>
+
       <div style="flex: 2; min-width: 160px;">
-        <input type="text" class="form-control" name="subject" value="{{ filter_subject }}" placeholder="Search subject...">
+        <input type="text" class="form-control" name="search" value="{{ search_q }}" placeholder="Search assignment, subject, student ID...">
       </div>
 
       <div style="display: flex; gap: 8px;">
@@ -63,12 +72,14 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>ID</th>
+            <th style="width: 55px;">ID</th>
+            <th>Student ID</th>
             <th>Academic Year</th>
-            <th>Assignment & Subject</th>
+            <th>Assignment &amp; Subject</th>
             <th>Language</th>
             <th>Filename</th>
-            <th>Action</th>
+            <th>Student Access</th>
+            <th style="text-align: right;">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -76,6 +87,9 @@
             {% for r in records %}
             <tr>
               <td><strong>#{{ r.id }}</strong></td>
+              <td>
+                <span class="code-id-chip" style="font-size: 0.82rem;">{{ r.student_id or 'UNASSIGNED' }}</span>
+              </td>
               <td><span class="badge badge-status">{{ r.academic_year }}</span></td>
               <td>
                 <div style="font-weight: 600;">{{ r.assignment_name }}</div>
@@ -86,8 +100,15 @@
                 <span style="font-family: var(--code-font); font-size: 0.8rem;">{{ r.source_filename }}</span>
               </td>
               <td>
+                {% if r.is_authorized_for_students %}
+                  <span class="badge badge-success" title="Visible as reference to this student">&#10003; Authorized</span>
+                {% else %}
+                  <span class="badge badge-neutral" title="Screening engine only, hidden from student">Faculty Only</span>
+                {% endif %}
+              </td>
+              <td style="text-align: right;">
                 <form action="{{ url_for('faculty.delete_historical', hist_id=r.id) }}" method="POST" 
-                      onsubmit="return confirm('Remove this historical submission from the repository?');">
+                      onsubmit="return confirm('Remove this historical submission from the repository?');" style="margin: 0; display: inline;">
                   <button type="submit" class="btn btn-sm btn-danger-outline">
                     Delete
                   </button>
@@ -97,7 +118,7 @@
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
+              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
                 No historical records match the filter criteria.
               </td>
             </tr>
@@ -123,13 +144,20 @@
       <div class="form-group">
         <label class="form-label" for="subject">Course Subject *</label>
         <input type="text" class="form-control" name="subject" id="subject" required 
-               placeholder="e.g. Data Structures & Algorithms">
+               placeholder="e.g. Data Structures &amp; Algorithms">
       </div>
 
       <div class="form-group">
         <label class="form-label" for="assignment_name">Assignment Name *</label>
         <input type="text" class="form-control" name="assignment_name" id="assignment_name" required 
                placeholder="e.g. CS201: Sorting Algorithms">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="student_id">Student ID / Roll No (Optional)</label>
+        <input type="text" class="form-control" name="student_id" id="student_id" 
+               placeholder="e.g. STU001 or HIST-REF-01">
+        <small style="color: var(--text-muted); font-size: 0.74rem;">Preserves author attribution; submissions are never merged even if code is identical.</small>
       </div>
 
       <div class="form-group">
@@ -146,6 +174,13 @@
         <label class="form-label" for="batch_label">Batch / Reference Label (Optional)</label>
         <input type="text" class="form-control" name="batch_label" id="batch_label" 
                placeholder="e.g. AY 2023-24 Batch A Final Exam">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; cursor: pointer;">
+          <input type="checkbox" name="is_authorized_for_students" value="1" checked style="width: 16px; height: 16px;">
+          <span><strong>Authorize for Student View</strong> (Visible to author student as historical reference)</span>
+        </label>
       </div>
 
       <div class="form-group upload-drop-zone">
