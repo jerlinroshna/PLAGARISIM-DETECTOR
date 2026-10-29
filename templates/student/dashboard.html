@@ -2,818 +2,322 @@
 
 {% block title %}Student Dashboard &bull; CodeGuard{% endblock %}
 {% block breadcrumb_page %}Dashboard{% endblock %}
-{% block page_title %}Student Workspace{% endblock %}
+{% block page_title %}Student Dashboard{% endblock %}
 
 {% block content %}
-<div class="student-dashboard" id="studentDashboardApp" data-pending="{{ pending_sub }}">
+<div class="student-dashboard-redesign" id="studentDashboard">
 
-  <!-- 1. Flag Alert Banner (Shown only if High-similarity submission has NO clarification submitted) -->
-  {% if flagged_unclarified and flagged_unclarified|length > 0 %}
-  <div class="alert-flagged-banner" id="flaggedAlertBanner" role="alert">
-    <div class="flagged-banner-left">
-      <div class="flagged-banner-icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-        </svg>
+  <!-- 1. Welcome Section (Compact, Clean & Personalized) -->
+  <section class="student-welcome-hero card" aria-label="Student Welcome">
+    <div class="welcome-hero-content">
+      <div class="welcome-hero-text">
+        <h1 class="welcome-title">
+          Welcome, {{ user.full_name or user.username }}!
+        </h1>
+        <p class="welcome-subtitle">
+          Track your submissions and code analysis results.
+        </p>
       </div>
-      <div class="flagged-banner-text">
-        <strong>Academic Flag:</strong> You have {{ flagged_unclarified|length }} submission(s) flagged with High Similarity (&ge; 70%) without an integrity clarification.
-        <span>Please review AST structural analysis and submit a clarification statement for faculty review.</span>
-      </div>
-    </div>
-    <div class="flagged-banner-actions">
-      <a href="{{ url_for('student.submission_detail', sub_id=flagged_unclarified[0].id) }}" class="btn-flagged-action">
-        Submit Clarification &rarr;
-      </a>
-      <button type="button" class="btn-flagged-dismiss" id="dismissFlaggedBtn" aria-label="Dismiss alert for this session">&times;</button>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- 2. Hero Banner: Dark gradient, greeting, roll chip, daily tip, CTAs, dynamic status & next deadline -->
-  <section class="dashboard-hero-card card" aria-label="Student Overview">
-    <div class="hero-left-content">
-      <div class="hero-chip-badge">
-        <span class="chip-dot"></span>
-        <span class="chip-text">
-          Roll No: <strong>{{ user.username }}</strong> &bull; Computer Science &amp; Engineering &bull; AY 2024&ndash;2025
-        </span>
-      </div>
-
-      <h1 class="hero-greeting-title">
-        <span id="heroGreetingText">Good Day</span>, {{ user.full_name }}! 👋
-      </h1>
-
-      <p class="hero-integrity-tip">
-        <span class="tip-bulb" aria-hidden="true">&#128161;</span>
-        <span id="heroIntegrityTipText">
-          Original algorithm design reflects genuine learning. Build logic independently and cite authorized references cleanly.
-        </span>
-      </p>
-
-      <div class="hero-action-buttons">
-        <a href="{{ url_for('student.submit') }}" class="btn hero-btn-primary" id="heroSubmitBtn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+      <div class="welcome-hero-actions">
+        <a href="{{ url_for('student.submit') }}" class="btn-submit-code-action" id="submitCodeBtn">
+          <svg class="action-icon-plus" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          <span>+ Submit Code</span>
-        </a>
-        <a href="{{ url_for('student.submissions') }}" class="btn hero-btn-secondary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-          </svg>
-          <span>View My Submissions</span>
+          <span>Submit Code</span>
         </a>
       </div>
-
-      <!-- Next Deadline live alert row under buttons -->
-      {% if next_deadline_asgn %}
-      <div class="hero-deadline-strip" id="heroDeadlineStrip">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" class="deadline-icon">
-          <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-        </svg>
-        <span class="deadline-strip-text">
-          Next due: <strong>{{ next_deadline_asgn.subject }} &ndash; {{ next_deadline_asgn.title }}</strong>
-        </span>
-        <span class="deadline-strip-timer" data-deadline="{{ next_deadline_asgn.deadline }}">
-          calculating...
-        </span>
-      </div>
-      {% endif %}
-    </div>
-
-    <!-- Dynamic Right-side Status Card -->
-    <div class="hero-queue-status">
-      {% if pending_sub > 0 %}
-        <div class="queue-status-box queue-status-active">
-          <div class="queue-spinner-ring" aria-hidden="true"></div>
-          <div>
-            <div class="queue-title">{{ pending_sub }} Screening{{ 's' if pending_sub > 1 else '' }} in Progress</div>
-            <div class="queue-subtitle">Live auto-refresh in <span id="queueCountdown">10</span>s</div>
-          </div>
-        </div>
-      {% elif flagged_submissions and flagged_submissions|length > 0 %}
-        <a href="{{ url_for('student.submission_detail', sub_id=flagged_submissions[0].id) }}" class="queue-status-box queue-status-flagged" style="text-decoration: none;">
-          <div class="queue-flag-icon">&#9888;</div>
-          <div>
-            <div class="queue-title">{{ flagged_submissions|length }} Submission(s) Flagged</div>
-            <div class="queue-subtitle">Action needed &bull; Review AST report &rarr;</div>
-          </div>
-        </a>
-      {% else %}
-        <div class="queue-status-box queue-status-idle">
-          <div class="queue-check-icon">&#10003;</div>
-          <div>
-            <div class="queue-title">All Screenings Clear</div>
-            <div class="queue-subtitle">AST normalization engine ready for uploads</div>
-          </div>
-        </div>
-      {% endif %}
     </div>
   </section>
 
-  <!-- 3. Four Metric Cards (Semantic theme tokens, sparklines, count-up animation, zero states) -->
-  <section class="metric-cards-grid" aria-label="Key Performance Indicators">
+  <!-- 2. Summary Cards (My Submissions, Reports Ready, Active Submissions) -->
+  <section class="student-summary-cards" aria-label="Submission Metrics Summary">
     <!-- Card 1: My Submissions -->
-    <a href="{{ url_for('student.submissions') }}" class="metric-card metric-card-blue card" id="metricCardTotal">
-      <div class="metric-card-top">
-        <div class="metric-icon icon-blue">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <a href="{{ url_for('student.recent_submissions') }}" class="summary-card card card-blue" id="summaryCardSubmissions">
+      <div class="summary-card-inner">
+        <div class="summary-card-icon icon-blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
             <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
           </svg>
         </div>
-        <span class="metric-chip chip-blue">All-Time</span>
+        <div class="summary-card-data">
+          <div class="summary-card-count">{{ total_sub }}</div>
+          <div class="summary-card-label">My Submissions</div>
+          <div class="summary-card-desc">Total code submissions recorded</div>
+        </div>
       </div>
-      <div class="metric-number-row">
-        <span class="metric-number" data-target="{{ total_sub }}">{{ total_sub }}</span>
-        <!-- Inline SVG Sparkline (last 7 days activity) -->
-        <svg class="metric-sparkline sparkline-blue" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
-          {% set max_c = 4 %}
-          {% set pts = [] %}
-          {% for item in activity_7d %}
-            {% set x = loop.index0 * 10 %}
-            {% set y = 20 - (item.count / max_c * 16)|round(1) %}
-            {% set _ = pts.append(x ~ ',' ~ y) %}
-          {% endfor %}
-          <polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="{{ pts|join(' ') }}" />
-        </svg>
-      </div>
-      <div class="metric-label">My Submissions</div>
-      {% if total_sub == 0 %}
-        <div class="metric-hint-zero">Submit your first file to get started</div>
-      {% else %}
-        <div class="metric-subtext">Lifetime source code submissions</div>
-      {% endif %}
     </a>
 
-    <!-- Card 2: Completed Analyses -->
-    <a href="{{ url_for('student.submissions', status='completed') }}" class="metric-card metric-card-green card" id="metricCardCompleted">
-      <div class="metric-card-top">
-        <div class="metric-icon icon-emerald">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+    <!-- Card 2: Reports Ready -->
+    <a href="{{ url_for('student.reports') }}" class="summary-card card card-emerald" id="summaryCardReports">
+      <div class="summary-card-inner">
+        <div class="summary-card-icon icon-emerald">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
           </svg>
         </div>
-        <span class="metric-chip chip-green">Screened</span>
+        <div class="summary-card-data">
+          <div class="summary-card-count">{{ reports_ready }}</div>
+          <div class="summary-card-label">Reports Ready</div>
+          <div class="summary-card-desc">Completed analysis reports available</div>
+        </div>
       </div>
-      <div class="metric-number-row">
-        <span class="metric-number" data-target="{{ completed_sub }}">{{ completed_sub }}</span>
-        <!-- Sparkline for screened -->
-        <svg class="metric-sparkline sparkline-green" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
-          {% set pts_scr = [] %}
-          {% for item in activity_7d %}
-            {% set x = loop.index0 * 10 %}
-            {% set y = 20 - (item.count / 4 * 16)|round(1) %}
-            {% set _ = pts_scr.append(x ~ ',' ~ y) %}
-          {% endfor %}
-          <polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="{{ pts_scr|join(' ') }}" />
-        </svg>
-      </div>
-      <div class="metric-label">Completed Analyses</div>
-      {% if completed_sub == 0 %}
-        <div class="metric-hint-zero">No screened files yet</div>
-      {% else %}
-        <div class="metric-subtext">AST &amp; token verified archives</div>
-      {% endif %}
     </a>
 
-    <!-- Card 3: Pending Screenings -->
-    <a href="{{ url_for('student.submissions', status='pending') }}" class="metric-card metric-card-amber card" id="metricCardPending">
-      <div class="metric-card-top">
-        <div class="metric-icon icon-amber">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <!-- Card 3: Active Submissions -->
+    <a href="{{ url_for('student.active_submissions') }}" class="summary-card card card-amber" id="summaryCardActive">
+      <div class="summary-card-inner">
+        <div class="summary-card-icon icon-amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/>
           </svg>
         </div>
-        {% if pending_sub > 0 %}
-          <span class="metric-chip chip-amber"><span class="pulse-ring"></span>Analyzing</span>
-        {% else %}
-          <span class="metric-chip chip-neutral">Idle</span>
-        {% endif %}
-      </div>
-      <div class="metric-number-row">
-        <span class="metric-number" data-target="{{ pending_sub }}">{{ pending_sub }}</span>
-      </div>
-      <div class="metric-label">Pending Screenings</div>
-      {% if pending_sub == 0 %}
-        <div class="metric-hint-zero">Queue empty &bull; Engine ready</div>
-      {% else %}
-        <div class="metric-subtext">{{ pending_sub }} file(s) in comparison queue</div>
-      {% endif %}
-    </a>
-
-    <!-- Card 4: To Submit (Active assignments not yet submitted) -->
-    <a href="{{ url_for('student.submit') }}" class="metric-card metric-card-indigo card" id="metricCardActive">
-      <div class="metric-card-top">
-        <div class="metric-icon icon-indigo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-          </svg>
+        <div class="summary-card-data">
+          <div class="summary-card-count">{{ active_sub }}</div>
+          <div class="summary-card-label">Active Submissions</div>
+          <div class="summary-card-desc">Submissions pending or processing</div>
         </div>
-        <span class="metric-chip chip-indigo">Open Term</span>
       </div>
-      <div class="metric-number-row">
-        <span class="metric-number" data-target="{{ to_submit_count }}">{{ to_submit_count }}</span>
-      </div>
-      <div class="metric-label">To Submit</div>
-      {% if to_submit_count == 0 %}
-        <div class="metric-hint-zero">All active assignments submitted!</div>
-      {% else %}
-        <div class="metric-subtext">Open assignments awaiting solution</div>
-      {% endif %}
     </a>
   </section>
 
-  <!-- 4. Charts Row (12-Col Grid: 5 Cols Donut + 7 Cols Bar Chart with Empty States) -->
-  <section class="charts-row-grid" aria-label="Similarity and Submission Trends">
+  <!-- 3. Personalized Charts Grid (Two-Column Layout on Desktop, Stacked on Mobile) -->
+  <section class="student-charts-2col-grid" aria-label="Personalized Analytics Charts">
     
-    <!-- Left 5 Cols: Similarity Overview Donut Chart -->
-    <div class="card chart-panel-card" id="similarityOverviewCard">
-      <div class="chart-panel-header">
+    <!-- Chart 1: My Submission Status (Pie / Donut Chart) -->
+    <div class="card chart-box" id="submissionStatusChartBox">
+      <div class="chart-box-header">
         <div>
-          <h2 class="card-title">Similarity Overview</h2>
-          <p class="card-subtitle">AST &amp; token score distribution across your screened files</p>
+          <h2 class="chart-box-title">My Submission Status</h2>
+          <p class="chart-box-subtitle">Breakdown of your submissions by processing status</p>
         </div>
-        <div class="card-header-tag">
-          <span>{{ similarity_dist.total }} Total Screened</span>
-        </div>
+        <span class="chart-count-chip">{{ status_chart.total }} Total</span>
       </div>
 
-      <div class="donut-chart-container">
-        {% if similarity_dist.total > 0 %}
-          <!-- Interactive SVG Donut -->
-          <div class="donut-svg-wrapper">
-            <svg class="donut-svg" viewBox="0 0 180 180" width="160" height="160" role="img" aria-label="Donut chart showing similarity breakdown: {{ similarity_dist.low }} Low, {{ similarity_dist.medium }} Medium, {{ similarity_dist.high }} High">
-              <circle class="donut-bg-ring" cx="90" cy="90" r="70" />
-              <!-- Low Segment (<30%) -->
-              <circle class="donut-segment segment-low" cx="90" cy="90" r="70"
-                      data-label="Low (<30%)"
-                      data-count="{{ similarity_dist.low }}"
-                      data-percent="{{ ((similarity_dist.low / similarity_dist.total) * 100)|round(1) }}" />
-              <!-- Medium Segment (30-69%) -->
-              <circle class="donut-segment segment-medium" cx="90" cy="90" r="70"
-                      data-label="Medium (30–69%)"
-                      data-count="{{ similarity_dist.medium }}"
-                      data-percent="{{ ((similarity_dist.medium / similarity_dist.total) * 100)|round(1) }}" />
-              <!-- High Segment (>=70%) -->
-              <circle class="donut-segment segment-high" cx="90" cy="90" r="70"
-                      data-label="High (≥70%)"
-                      data-count="{{ similarity_dist.high }}"
-                      data-percent="{{ ((similarity_dist.high / similarity_dist.total) * 100)|round(1) }}" />
-            </svg>
-            <div class="donut-center-text">
-              <span class="donut-center-num">{{ similarity_dist.total }}</span>
-              <span class="donut-center-label">Files</span>
-            </div>
-            <!-- Tooltip element -->
-            <div class="donut-tooltip" id="donutTooltip" style="display: none;"></div>
-          </div>
-
-          <!-- Donut Legend & Stats -->
-          <div class="donut-legend-list">
-            <div class="legend-row">
-              <div class="legend-label-col">
-                <span class="legend-bullet bullet-emerald"></span>
-                <span class="legend-name">Low (&lt; 30%)</span>
-              </div>
-              <div class="legend-val-col">
-                <strong>{{ similarity_dist.low }}</strong>
-                <span class="legend-pct">({{ ((similarity_dist.low / similarity_dist.total) * 100)|round(0)|int }}%)</span>
-              </div>
-            </div>
-
-            <div class="legend-row">
-              <div class="legend-label-col">
-                <span class="legend-bullet bullet-amber"></span>
-                <span class="legend-name">Medium (30–69%)</span>
-              </div>
-              <div class="legend-val-col">
-                <strong>{{ similarity_dist.medium }}</strong>
-                <span class="legend-pct">({{ ((similarity_dist.medium / similarity_dist.total) * 100)|round(0)|int }}%)</span>
-              </div>
-            </div>
-
-            <div class="legend-row">
-              <div class="legend-label-col">
-                <span class="legend-bullet bullet-rose"></span>
-                <span class="legend-name">High (&ge; 70%)</span>
-              </div>
-              <div class="legend-val-col">
-                <strong>{{ similarity_dist.high }}</strong>
-                <span class="legend-pct">({{ ((similarity_dist.high / similarity_dist.total) * 100)|round(0)|int }}%)</span>
-              </div>
-            </div>
-
-            <div class="donut-legend-footer">
-              <span class="formula-tag">Weight: 40% Token + 60% AST Structure</span>
-            </div>
-          </div>
-        {% else %}
-          <!-- Empty State for Donut -->
-          <div class="chart-empty-state">
-            <div class="empty-ring-dashed" aria-hidden="true">
-              <svg width="70" height="70" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="6" stroke-dasharray="6 6" />
+      <div class="chart-box-body">
+        {% if status_chart.total > 0 %}
+          <div class="donut-chart-flex">
+            <!-- SVG Donut Chart -->
+            <div class="status-donut-wrap">
+              <svg class="status-donut-svg" viewBox="0 0 160 160" width="140" height="140" role="img" aria-label="Submission Status Donut Chart">
+                <circle class="donut-bg-circle" cx="80" cy="80" r="60" />
+                <!-- Completed Segment -->
+                {% set circ = 376.99 %}
+                {% set comp_dash = (status_chart.completed / status_chart.total * circ)|round(2) %}
+                {% set proc_dash = (status_chart.processing / status_chart.total * circ)|round(2) %}
+                {% set fail_dash = (status_chart.failed / status_chart.total * circ)|round(2) %}
+                
+                <circle class="donut-slice slice-completed" cx="80" cy="80" r="60"
+                        style="stroke-dasharray: {{ comp_dash }} {{ circ - comp_dash }}; stroke-dashoffset: 0;"
+                        data-tooltip="Completed: {{ status_chart.completed }} ({{ status_chart.completed_pct }}%)" />
+                
+                <circle class="donut-slice slice-processing" cx="80" cy="80" r="60"
+                        style="stroke-dasharray: {{ proc_dash }} {{ circ - proc_dash }}; stroke-dashoffset: -{{ comp_dash }};"
+                        data-tooltip="Processing: {{ status_chart.processing }} ({{ status_chart.processing_pct }}%)" />
+                
+                <circle class="donut-slice slice-failed" cx="80" cy="80" r="60"
+                        style="stroke-dasharray: {{ fail_dash }} {{ circ - fail_dash }}; stroke-dashoffset: -{{ comp_dash + proc_dash }};"
+                        data-tooltip="Failed: {{ status_chart.failed }} ({{ status_chart.failed_pct }}%)" />
               </svg>
+              <div class="donut-inner-content">
+                <span class="donut-inner-num">{{ status_chart.total }}</span>
+                <span class="donut-inner-sub">Files</span>
+              </div>
             </div>
-            <div class="empty-title">No analyses yet</div>
-            <p class="empty-desc">Similarity bands will be calculated automatically upon screening your code.</p>
-            <a href="{{ url_for('student.submit') }}" class="btn btn-sm btn-outline">+ Submit Code</a>
+
+            <!-- Status Legend with Counts -->
+            <div class="status-legend-col">
+              <div class="status-legend-item">
+                <div class="legend-dot dot-completed"></div>
+                <div class="legend-text-wrap">
+                  <div class="legend-row-top">
+                    <span class="legend-title">Completed</span>
+                    <strong class="legend-val">{{ status_chart.completed }}</strong>
+                  </div>
+                  <span class="legend-pct-label">{{ status_chart.completed_pct }}% of total</span>
+                </div>
+              </div>
+
+              <div class="status-legend-item">
+                <div class="legend-dot dot-processing"></div>
+                <div class="legend-text-wrap">
+                  <div class="legend-row-top">
+                    <span class="legend-title">Processing / Pending</span>
+                    <strong class="legend-val">{{ status_chart.processing }}</strong>
+                  </div>
+                  <span class="legend-pct-label">{{ status_chart.processing_pct }}% of total</span>
+                </div>
+              </div>
+
+              <div class="status-legend-item">
+                <div class="legend-dot dot-failed"></div>
+                <div class="legend-text-wrap">
+                  <div class="legend-row-top">
+                    <span class="legend-title">Failed</span>
+                    <strong class="legend-val">{{ status_chart.failed }}</strong>
+                  </div>
+                  <span class="legend-pct-label">{{ status_chart.failed_pct }}% of total</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="chart-empty-box">
+            <svg class="empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <p class="empty-title">No submissions yet</p>
+            <p class="empty-sub">Once you submit source code, your submission status will appear here.</p>
           </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Right 7 Cols: Submission Activity Bar Chart (7 Days / 6 Weeks Toggle) -->
-    <div class="card chart-panel-card" id="submissionActivityCard">
-      <div class="chart-panel-header">
+    <!-- Chart 2: My Similarity Distribution (Bar Chart with 5 Buckets) -->
+    <div class="card chart-box" id="similarityDistributionChartBox">
+      <div class="chart-box-header">
         <div>
-          <h2 class="card-title">Submission Activity</h2>
-          <p class="card-subtitle">Volume of code screening requests submitted over time</p>
+          <h2 class="chart-box-title">My Similarity Distribution</h2>
+          <p class="chart-box-subtitle">Distribution across your completed analysis reports</p>
         </div>
-        <!-- Segmented Control Toggle -->
-        <div class="segmented-control" role="tablist" aria-label="Activity Timeframe Toggle">
-          <button type="button" class="btn-segment active" id="toggle7dBtn" role="tab" aria-selected="true" data-mode="7d">
-            Last 7 Days
-          </button>
-          <button type="button" class="btn-segment" id="toggle6wBtn" role="tab" aria-selected="false" data-mode="6w">
-            Last 6 Weeks
-          </button>
-        </div>
+        <span class="chart-count-chip">{{ sim_chart.total_reports }} Reports</span>
       </div>
 
-      <!-- Activity Bar Chart Container -->
-      <div class="activity-chart-wrap">
-        <!-- 7 Days Bar Chart View -->
-        <div class="bar-chart-view" id="chartView7d" role="region" aria-label="Last 7 Days Submission Chart">
-          <div class="bar-chart-bars">
-            {% set max_7d = 5 %}
-            {% for item in activity_7d %}
-              {% set bar_h = 6 if item.count == 0 else (15 + (item.count / max_7d * 80))|round(0)|int %}
-              <div class="bar-col">
-                <div class="bar-val-label">{% if item.count > 0 %}{{ item.count }}{% endif %}</div>
-                <div class="bar-track">
-                  <div class="bar-fill {% if item.count > 0 %}bar-has-value{% endif %}"
-                       style="height: {{ bar_h }}%;"
-                       data-tooltip="{{ item.label }}: {{ item.count }} submission(s)">
+      <div class="chart-box-body">
+        {% if sim_chart.total_reports > 0 %}
+          <div class="sim-bars-container">
+            {% set buckets = [
+              {'label': '0–20%', 'data': sim_chart.b0_20, 'cls': 'bar-green'},
+              {'label': '21–40%', 'data': sim_chart.b21_40, 'cls': 'bar-teal'},
+              {'label': '41–60%', 'data': sim_chart.b41_60, 'cls': 'bar-amber'},
+              {'label': '61–80%', 'data': sim_chart.b61_80, 'cls': 'bar-orange'},
+              {'label': '81–100%', 'data': sim_chart.b81_100, 'cls': 'bar-red'}
+            ] %}
+
+            {% for b in buckets %}
+              {% set pct = b.data.pct %}
+              {% set cnt = b.data.count %}
+              <div class="sim-bar-row">
+                <div class="sim-bar-label-col">
+                  <span class="sim-range-text">{{ b.label }}</span>
+                </div>
+                <div class="sim-bar-track-col">
+                  <div class="sim-bar-track">
+                    <div class="sim-bar-fill {{ b.cls }}" style="width: {{ pct }}%;" title="{{ b.label }}: {{ cnt }} reports ({{ pct }}%)"></div>
                   </div>
                 </div>
-                <div class="bar-x-label">{{ item.day }}</div>
-                <div class="bar-date-sub">{{ item.label.split(' ')[1] }}</div>
+                <div class="sim-bar-val-col">
+                  <strong>{{ cnt }}</strong>
+                  <span class="sim-pct-text">({{ pct }}%)</span>
+                </div>
               </div>
             {% endfor %}
           </div>
-        </div>
+          <div class="chart-disclaimer-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+            <span>Note: Similarity scores are indicators for human review and do not independently prove plagiarism.</span>
+          </div>
+        {% else %}
+          <div class="chart-empty-box">
+            <svg class="empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <p class="empty-title">No completed reports yet</p>
+            <p class="empty-sub">Similarity score distributions will display once screening is completed.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
 
-        <!-- 6 Weeks Bar Chart View (Toggle via JS) -->
-        <div class="bar-chart-view" id="chartView6w" style="display: none;" role="region" aria-label="Last 6 Weeks Submission Chart">
-          <div class="bar-chart-bars">
-            {% set max_6w = 8 %}
-            {% for item in activity_6w %}
-              {% set bar_h_w = 6 if item.count == 0 else (15 + (item.count / max_6w * 80))|round(0)|int %}
-              <div class="bar-col">
-                <div class="bar-val-label">{% if item.count > 0 %}{{ item.count }}{% endif %}</div>
-                <div class="bar-track">
-                  <div class="bar-fill {% if item.count > 0 %}bar-has-value{% endif %}"
-                       style="height: {{ bar_h_w }}%;"
-                       data-tooltip="{{ item.label }}: {{ item.count }} submission(s)">
+    <!-- Chart 3: My Programming Languages (Bar/Breakdown Chart) -->
+    <div class="card chart-box" id="programmingLanguagesChartBox">
+      <div class="chart-box-header">
+        <div>
+          <h2 class="chart-box-title">My Programming Languages</h2>
+          <p class="chart-box-subtitle">Source code languages detected across your submissions</p>
+        </div>
+        <span class="chart-count-chip">{{ languages_data|length }} Languages</span>
+      </div>
+
+      <div class="chart-box-body">
+        {% if languages_data and languages_data|length > 0 %}
+          <div class="lang-breakdown-list">
+            {% for item in languages_data %}
+              <div class="lang-breakdown-item">
+                <div class="lang-item-header">
+                  <div class="lang-badge-wrap">
+                    <span class="lang-dot dot-lang-{{ item.key }}"></span>
+                    <span class="lang-name">{{ item.name }}</span>
+                  </div>
+                  <div class="lang-count-wrap">
+                    <strong>{{ item.count }}</strong>
+                    <span class="lang-pct">({{ item.pct }}%)</span>
                   </div>
                 </div>
-                <div class="bar-x-label">{{ item.week }}</div>
-                <div class="bar-date-sub">{{ item.label }}</div>
+                <div class="lang-progress-track">
+                  <div class="lang-progress-bar bar-lang-{{ item.key }}" style="width: {{ item.pct }}%;"></div>
+                </div>
               </div>
             {% endfor %}
           </div>
-        </div>
-
-        <!-- Empty period notice when no activity is recorded -->
-        {% if completed_sub == 0 and pending_sub == 0 %}
-          <div class="activity-empty-notice">
-            <span class="activity-empty-icon">&#128202;</span>
-            <span>No submissions in this period</span>
-          </div>
-        {% endif %}
-
-        <div class="activity-chart-footer">
-          <span class="activity-note">&#128337; Submissions are automatically parsed and normalized into AST tokens on upload.</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 5. Integrity Health Score & Quick Submit Dropzone Row (Phase G) -->
-  <section class="dashboard-mid-grid" aria-label="Integrity Score and Quick Submit">
-    
-    <!-- G.1 Integrity Health Score Card -->
-    <div class="card health-score-card" id="integrityHealthCard">
-      <div class="health-card-header">
-        <div class="health-header-text">
-          <h2 class="card-title">Academic Integrity Health Score</h2>
-          <p class="card-subtitle">Calculated as 100 minus average composite similarity score</p>
-        </div>
-        {% if health_score is not none %}
-          {% if health_score >= 80 %}
-            <span class="health-tier-badge tier-excellent">&#10003; Excellent</span>
-          {% elif health_score >= 60 %}
-            <span class="health-tier-badge tier-good">&bull; Good</span>
-          {% else %}
-            <span class="health-tier-badge tier-attention">&#9888; Needs Attention</span>
-          {% endif %}
-        {% endif %}
-      </div>
-
-      <div class="health-card-body">
-        {% if health_score is not none %}
-          <div class="health-gauge-wrap">
-            <svg class="health-gauge-svg" viewBox="0 0 120 120" width="110" height="110">
-              <circle class="gauge-bg" cx="60" cy="60" r="50" />
-              <!-- Circumference = 314.16 -->
-              {% set dash_offset = (314.16 - (health_score / 100 * 314.16))|round(1) %}
-              <circle class="gauge-bar {% if health_score >= 80 %}gauge-green{% elif health_score >= 60 %}gauge-amber{% else %}gauge-red{% endif %}"
-                      cx="60" cy="60" r="50"
-                      style="stroke-dashoffset: {{ dash_offset }};" />
-            </svg>
-            <div class="health-gauge-center">
-              <span class="health-score-val" data-target="{{ health_score }}">{{ health_score }}</span>
-              <span class="health-score-scale">/ 100</span>
-            </div>
-          </div>
-          <div class="health-score-details">
-            <div class="health-detail-item">
-              <span class="detail-label">Overall Rating:</span>
-              <strong class="detail-val">
-                {% if health_score >= 80 %}High Integrity Standing{% elif health_score >= 60 %}Acceptable Standard{% else %}Requires Caution{% endif %}
-              </strong>
-            </div>
-            <p class="health-detail-desc">
-              Your source code demonstrates consistent independent logic structuring across {{ completed_sub }} completed evaluation{{ 's' if completed_sub > 1 else '' }}.
-            </p>
-            <div class="health-detail-links">
-              <a href="{{ url_for('student.academic_integrity') }}" class="health-guide-link">Read Integrity Guidelines &rarr;</a>
-            </div>
-          </div>
         {% else %}
-          <div class="health-empty-state">
-            <div class="health-empty-icon">&#128220;</div>
-            <div class="empty-title">Available after your first analysis</div>
-            <p class="empty-desc">Upload a programming assignment to compute your personalized academic integrity score.</p>
-            <a href="{{ url_for('student.submit') }}" class="btn btn-outline btn-sm">+ Submit First Code File</a>
+          <div class="chart-empty-box">
+            <svg class="empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            <p class="empty-title">No languages recorded</p>
+            <p class="empty-sub">Language breakdowns will be generated from your code submissions.</p>
           </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- G.5 Quick Submit Drop Zone -->
-    <div class="card quick-submit-card" id="quickSubmitDropzoneCard">
-      <div class="quick-submit-header">
+    <!-- Chart 4: My Monthly Submission Activity (Bar Chart) -->
+    <div class="card chart-box" id="monthlyActivityChartBox">
+      <div class="chart-box-header">
         <div>
-          <h2 class="card-title">Quick Submit</h2>
-          <p class="card-subtitle">Drag and drop any source file (.py, .java, .c, .cpp) for screening</p>
+          <h2 class="chart-box-title">My Monthly Submission Activity</h2>
+          <p class="chart-box-subtitle">Submission volume over the past 6 months</p>
         </div>
-      </div>
-      <div class="quick-dropzone-area" id="quickDropzoneArea">
-        <input type="file" id="quickFileInput" class="quick-file-input" accept=".py,.java,.c,.cpp" aria-label="Drop source code file here" />
-        <div class="quick-dropzone-content">
-          <div class="quick-drop-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
-            </svg>
-          </div>
-          <div class="quick-drop-title">Drag &amp; drop code file here, or <span class="quick-browse-link">browse</span></div>
-          <div class="quick-drop-hint">Supported: Python (.py), Java (.java), C (.c), C++ (.cpp)</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 6. Active Assignments Grid (3 per row desktop, 1 on mobile) -->
-  <section class="dashboard-section" id="activeAssignmentsSection" aria-label="Active Assignments">
-    <div class="section-header-flex">
-      <div>
-        <h2 class="section-title">Active Assignments</h2>
-        <p class="section-desc">Course assignments currently open for automated plagiarism pre-screening</p>
-      </div>
-      <a href="{{ url_for('student.submit') }}" class="section-view-all">
-        Go to Submit Code &rarr;
-      </a>
-    </div>
-
-    {% if upcoming_assignments and upcoming_assignments|length > 0 %}
-      <div class="assignments-card-grid" id="assignmentsListContainer">
-        {% for asgn in upcoming_assignments %}
-          <div class="assignment-tile card {% if not asgn.is_active %}assignment-closed{% endif %}" data-asgn-id="{{ asgn.id }}" data-asgn-title="{{ asgn.title|lower }}" data-asgn-subj="{{ asgn.subject|lower }}">
-            <div class="assignment-tile-top">
-              <span class="subject-badge">{{ asgn.subject }}</span>
-              <!-- Live Countdown Badge -->
-              {% if asgn.is_active %}
-                <span class="deadline-countdown-badge"
-                      data-deadline="{{ asgn.deadline or '' }}"
-                      title="Assignment Deadline">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-                  </svg>
-                  <span class="countdown-text">Calculating...</span>
-                </span>
-              {% else %}
-                <span class="deadline-countdown-badge deadline-closed">
-                  Closed
-                </span>
-              {% endif %}
-            </div>
-
-            <h3 class="assignment-tile-title">{{ asgn.title }}</h3>
-            
-            <p class="assignment-tile-desc">
-              {{ (asgn.description or 'No assignment description provided.')[:110] }}{% if asgn.description and asgn.description|length > 110 %}...{% endif %}
-            </p>
-
-            <!-- Allowed Languages -->
-            <div class="allowed-langs-row">
-              <span class="langs-label">Allowed:</span>
-              <div class="lang-pills-wrap">
-                {% for lang in asgn.allowed_languages.split(',') %}
-                  {% set l_clean = lang.strip().lower() %}
-                  <span class="lang-pill lang-pill-{{ l_clean }}">{{ lang.strip()|upper }}</span>
-                {% endfor %}
-              </div>
-            </div>
-
-            <!-- Student Submission Status & Action Footer -->
-            <div class="assignment-tile-footer">
-              <div class="status-indicator-col">
-                {% if not asgn.is_active %}
-                  <span class="asgn-status-badge status-closed">Closed</span>
-                {% elif not asgn.submission_id %}
-                  <span class="asgn-status-badge status-unsubmitted">
-                    <span class="status-dot"></span> Not Submitted
-                  </span>
-                {% elif asgn.analysis_status == 'pending' %}
-                  <span class="asgn-status-badge status-pending">
-                    <span class="spinner-tiny"></span> Screening...
-                  </span>
-                {% elif asgn.analysis_status == 'completed' %}
-                  {% if asgn.similarity_label == 'Low Similarity' %}
-                    <span class="asgn-status-badge status-cleared" title="{{ asgn.combined_similarity_score }}% Similarity">
-                      &#10003; Screened ({{ asgn.combined_similarity_score }}%)
-                    </span>
-                  {% elif asgn.similarity_label == 'Medium Similarity' %}
-                    <span class="asgn-status-badge status-warning" title="{{ asgn.combined_similarity_score }}% Similarity">
-                      &bull; Medium ({{ asgn.combined_similarity_score }}%)
-                    </span>
-                  {% else %}
-                    <span class="asgn-status-badge status-flagged" title="{{ asgn.combined_similarity_score }}% Similarity">
-                      &#9888; Flagged ({{ asgn.combined_similarity_score }}%)
-                    </span>
-                  {% endif %}
-                {% endif %}
-              </div>
-
-              {% if asgn.is_active %}
-                <a href="{{ url_for('student.submit', assignment_id=asgn.id) }}"
-                   class="btn btn-sm btn-primary asgn-submit-btn"
-                   id="submitAsgnBtn_{{ asgn.id }}">
-                  {% if asgn.submission_id %}Re-Submit &rarr;{% else %}Submit &rarr;{% endif %}
-                </a>
-              {% else %}
-                <button type="button" class="btn btn-sm btn-disabled asgn-submit-btn" disabled>
-                  Closed
-                </button>
-              {% endif %}
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="card empty-state-box">
-        <div class="empty-icon-wrap">&#128218;</div>
-        <div class="empty-title">No Active Assignments</div>
-        <p class="empty-desc">There are no assignment submission windows open at this time. Check back later or review your previous submissions.</p>
-      </div>
-    {% endif %}
-  </section>
-
-  <!-- 7. Recent Submissions Table (Latest 5 with Review Statuses & Mobile Stacked Cards) -->
-  <section class="dashboard-section" id="recentSubmissionsSection" aria-label="Recent Submissions">
-    <div class="section-header-flex">
-      <div>
-        <h2 class="section-title">Recent Submissions</h2>
-        <p class="section-desc">Latest code submissions evaluated by the AST syntactic analyzer</p>
-      </div>
-      <a href="{{ url_for('student.submissions') }}" class="section-view-all">
-        View All ({{ total_sub }}) &rarr;
-      </a>
-    </div>
-
-    <div class="card table-card">
-      {% if recent_submissions and recent_submissions|length > 0 %}
-        <div class="table-responsive">
-          <table class="data-table" id="recentSubmissionsTable">
-            <thead>
-              <tr>
-                <th style="width: 70px;">ID</th>
-                <th>Assignment &amp; Subject</th>
-                <th>Language</th>
-                <th>Submitted Date</th>
-                <th>Similarity Band</th>
-                <th>Review Status</th>
-                <th style="text-align: right;">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for sub in recent_submissions %}
-                <tr class="submission-row" data-sub-id="{{ sub.id }}" data-search-text="{{ sub.assignment_title|lower }} {{ sub.programming_language|lower }} {{ sub.source_filename|lower }}">
-                  <td class="sub-id-cell" data-label="ID">
-                    <span class="code-id-chip">#{{ sub.id }}</span>
-                  </td>
-                  <td data-label="Assignment">
-                    <div class="table-asgn-title">{{ sub.assignment_title }}</div>
-                    <div class="table-asgn-meta">{{ sub.subject }} &bull; <code>{{ sub.source_filename }}</code></div>
-                  </td>
-                  <td data-label="Language">
-                    <span class="lang-pill lang-pill-{{ sub.programming_language|lower }}">
-                      {{ sub.programming_language|upper }}
-                    </span>
-                  </td>
-                  <td class="sub-date-cell" data-label="Submitted">
-                    <span class="date-main">{{ sub.submitted_at[:10] }}</span>
-                    <span class="time-sub">{{ sub.submitted_at[11:16] }}</span>
-                  </td>
-                  <td data-label="Similarity">
-                    {% if sub.analysis_status == 'completed' %}
-                      {% if sub.similarity_label == 'Low Similarity' %}
-                        <span class="badge badge-success" title="40% Text + 60% AST">
-                          {{ sub.combined_similarity_score }}% &bull; Low
-                        </span>
-                      {% elif sub.similarity_label == 'Medium Similarity' %}
-                        <span class="badge badge-warning" title="40% Text + 60% AST">
-                          {{ sub.combined_similarity_score }}% &bull; Medium
-                        </span>
-                      {% else %}
-                        <span class="badge badge-danger" title="40% Text + 60% AST">
-                          {{ sub.combined_similarity_score }}% &bull; High
-                        </span>
-                      {% endif %}
-                    {% else %}
-                      <span class="badge badge-neutral">
-                        <span class="spinner-tiny"></span> Screening...
-                      </span>
-                    {% endif %}
-                  </td>
-                  <td data-label="Review Status">
-                    {% if sub.review_status == 'Reviewed' or sub.review_status == 'No Concern Identified' or sub.review_status == 'Cleared' %}
-                      <span class="badge badge-success">Cleared</span>
-                    {% elif sub.review_status == 'Further Investigation Required' or sub.review_status == 'Under Investigation' %}
-                      <span class="badge badge-warning">Under Investigation</span>
-                    {% elif sub.review_status == 'Warning' %}
-                      <span class="badge badge-warning">Warning</span>
-                    {% elif sub.review_status == 'Violation Confirmed' %}
-                      <span class="badge badge-danger">Violation Confirmed</span>
-                    {% else %}
-                      <span class="badge badge-neutral">Pending Review</span>
-                    {% endif %}
-                  </td>
-                  <td style="text-align: right;" data-label="Action">
-                    <a href="{{ url_for('student.submission_detail', sub_id=sub.id) }}" class="table-action-link" title="Inspect comparison breakdown">
-                      View Report &rarr;
-                    </a>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <!-- Empty State for Recent Submissions -->
-        <div class="table-empty-state">
-          <div class="empty-icon-box">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-          </div>
-          <h3 class="table-empty-title">No submissions yet</h3>
-          <p class="table-empty-subtitle">Submit your first code file to run automated AST structural screening against institutional archives.</p>
-          <a href="{{ url_for('student.submit') }}" class="btn btn-primary btn-sm">+ Submit Your First Code File</a>
-        </div>
-      {% endif %}
-    </div>
-  </section>
-
-  <!-- 8. Bottom 3-Column Info Row: Notifications, Academic Integrity Tips, Upcoming Deadline Timeline -->
-  <section class="dashboard-tri-grid" aria-label="Notifications, Guidelines, and Upcoming Deadlines">
-    <!-- Col 1: Notifications Preview (3 latest) -->
-    <div class="card bottom-info-card" id="notificationsPreviewCard">
-      <div class="bottom-card-header">
-        <div class="header-with-icon">
-          <span class="header-icon-wrap icon-blue">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
-            </svg>
-          </span>
-          <h3 class="card-title">Recent Notifications</h3>
-        </div>
-        <a href="{{ url_for('student.notifications') }}" class="header-link">View All &rarr;</a>
+        <span class="chart-count-chip">Past 6 Months</span>
       </div>
 
-      <div class="notif-preview-list">
-        {% if user_notifications and user_notifications|length > 0 %}
-          {% for notif in user_notifications[:3] %}
-            <a href="{{ notif.link_url or url_for('student.notifications') }}" class="notif-preview-item {% if not notif.is_read %}unread-item{% endif %}">
-              <div class="notif-item-header">
-                <span class="notif-item-title">{{ notif.title }}</span>
-                {% if not notif.is_read %}
-                  <span class="notif-dot-unread" title="Unread notification"></span>
-                {% endif %}
-              </div>
-              <p class="notif-item-msg">{{ notif.message }}</p>
-              <span class="notif-item-time">{{ notif.created_at[:16] }}</span>
-            </a>
-          {% endfor %}
-        {% else %}
-          <div class="notif-empty-box">
-            <div class="notif-check-icon">&#10003;</div>
-            <p>You're all caught up with your academic announcements!</p>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Col 2: Academic Integrity Tips Card -->
-    <div class="card bottom-info-card integrity-promo-card" id="academicIntegrityTipsCard">
-      <div class="bottom-card-header">
-        <div class="header-with-icon">
-          <span class="header-icon-wrap icon-emerald">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
-            </svg>
-          </span>
-          <h3 class="card-title">Academic Integrity</h3>
-        </div>
-        <a href="{{ url_for('student.academic_integrity') }}" class="header-link">Guide &rarr;</a>
-      </div>
-
-      <div class="integrity-card-body">
-        <p class="integrity-body-text">
-          CodeGuard evaluates AST subtree isomorphism and token entropy. Identifier renaming preserves structural similarity.
-        </p>
-
-        <ul class="integrity-bullets-list">
-          <li>
-            <span class="bullet-check">&#10003;</span>
-            <span>Discuss algorithm strategy with classmates.</span>
-          </li>
-          <li>
-            <span class="bullet-check">&#10003;</span>
-            <span>Always cite external algorithm sources cleanly.</span>
-          </li>
-          <li>
-            <span class="bullet-cross">&#10007;</span>
-            <span>Never share raw code or paste solution fragments.</span>
-          </li>
-        </ul>
-
-        <div class="integrity-card-cta">
-          <a href="{{ url_for('student.academic_integrity') }}" class="btn btn-outline btn-sm">
-            Read Screening Policy &rarr;
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Col 3: Deadline Timeline Card -->
-    <div class="card bottom-info-card deadline-timeline-card" id="deadlinesTimelineCard">
-      <div class="bottom-card-header">
-        <div class="header-with-icon">
-          <span class="header-icon-wrap icon-amber">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-            </svg>
-          </span>
-          <h3 class="card-title">Deadline Timeline</h3>
-        </div>
-        <span class="header-meta-tag">Upcoming</span>
-      </div>
-
-      <div class="timeline-list">
-        {% if upcoming_timeline and upcoming_timeline|length > 0 %}
-          {% for asgn in upcoming_timeline %}
-            <div class="timeline-item">
-              <div class="timeline-dot"></div>
-              <div class="timeline-content">
-                <div class="timeline-asgn-header">
-                  <span class="timeline-subject">{{ asgn.subject }}</span>
-                  <span class="timeline-timer" data-deadline="{{ asgn.deadline }}">...</span>
+      <div class="chart-box-body">
+        {% if has_monthly_data %}
+          <div class="monthly-bars-chart">
+            {% for m in monthly_activity %}
+              <div class="month-col">
+                <div class="month-val">{% if m.count > 0 %}{{ m.count }}{% endif %}</div>
+                <div class="month-track">
+                  <div class="month-bar {% if m.count > 0 %}has-data{% endif %}"
+                       style="height: {{ m.bar_height }}%;"
+                       data-tooltip="{{ m.label }}: {{ m.count }} submission(s)">
+                  </div>
                 </div>
-                <div class="timeline-title">{{ asgn.title }}</div>
-                <div class="timeline-date-row">
-                  <span>Due: {{ asgn.deadline[:10] }} ({{ asgn.deadline[11:16] }})</span>
-                  <a href="{{ url_for('student.submit', assignment_id=asgn.id) }}" class="timeline-submit-link">Submit &rarr;</a>
-                </div>
+                <div class="month-label">{{ m.short_label }}</div>
+                <div class="month-sublabel">{{ m.ym.split('-')[0] }}</div>
               </div>
-            </div>
-          {% endfor %}
+            {% endfor %}
+          </div>
         {% else %}
-          <div class="timeline-empty-box">
-            <p>No upcoming deadlines found on your active schedule.</p>
+          <div class="chart-empty-box">
+            <svg class="empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <p class="empty-title">No monthly activity recorded</p>
+            <p class="empty-sub">Your monthly submission trends will appear as you submit assignments.</p>
           </div>
         {% endif %}
       </div>

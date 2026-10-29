@@ -21,33 +21,235 @@ def dashboard():
     user = get_current_user()
     conn = database.get_db_connection()
 
-    # Submission metrics for this student
+    # 1. Summary Cards (strictly scoped to authenticated session user['id'])
     total_sub = conn.execute(
         "SELECT COUNT(*) FROM student_submissions WHERE student_id = ?",
         (user["id"],)
     ).fetchone()[0]
 
-    completed_sub = conn.execute(
-        "SELECT COUNT(*) FROM student_submissions WHERE student_id = ? AND analysis_status = 'completed'",
+    reports_ready = conn.execute("""
+        SELECT COUNT(*) FROM student_submissions s
+        JOIN analysis_results r ON s.id = r.submission_id
+        WHERE s.student_id = ? AND s.analysis_status = 'completed'
+    """, (user["id"],)).fetchone()[0]
+
+    active_sub = conn.execute("""
+        SELECT COUNT(*) FROM student_submissions
+        WHERE student_id = ? AND analysis_status IN ('pending', 'processing')
+    """, (user["id"],)).fetchone()[0]
+
+    # 2. Chart C: My Submission Status (Completed, Processing, Failed)
+    status_rows = conn.execute("""
+        SELECT analysis_status, COUNT(*) AS count
+        FROM student_submissions
+        WHERE student_id = ?
+        GROUP BY analysis_status
+    """, (user["id"],)).fetchall()
+
+    completed_count = 0
+    processing_count = 0
+    failed_count = 0
+    for row in status_rows:
+        st = (row["analysis_status"] or "").lower().strip()
+        cnt = row["count"]
+        if st in ("completed", "screened", "success"):
+            completed_count += cnt
+        elif st in ("pending", "processing", "queued", "analyzing"):
+            processing_count += cnt
+        elif st in ("failed", "error"):
+            failed_count += cnt
+        else:
+            processing_count += cnt
+
+    status_total = completed_count + processing_count + failed_count
+    status_chart = {
+        "completed": completed_count,
+        "processing": processing_count,
+        "failed": failed_count,
+        "total": status_total,
+        "completed_pct": round((completed_count / status_total * 100), 1) if status_total > 0 else 0,
+        "processing_pct": round((processing_count / status_total * 100), 1) if status_total > 0 else 0,
+        "failed_pct": round((failed_count / status_total * 100), 1) if status_total > 0 else 0,
+    }
+
+    # 3. Chart D: My Similarity Distribution (0-20%, 21-40%, 41-60%, 61-80%, 81-100%)
+    sim_scores = conn.execute("""
+        SELECT r.combined_similarity_score
+        FROM student_submissions s
+        JOIN analysis_results r ON s.id = r.submission_id
+        WHERE s.student_id = ? AND s.analysis_status = 'completed' AND r.combined_similarity_score IS NOT NULL
+    """, (user["id"],)).fetchall()
+
+    sim_buckets = {
+        "b0_20": 0,
+        "b21_40": 0,
+        "b41_60": 0,
+        "b61_80": 0,
+        "b81_100": 0
+    }
+    total_scored_reports = len(sim_scores)
+    for row in sim_scores:
+        score = float(row["combined_similarity_score"])
+        if score <= 20.0:
+            sim_buckets["b0_20"] += 1
+        elif score <= 40.0:
+            sim_buckets["b21_40"] += 1
+        elif score <= 60.0:
+            sim_buckets["b41_60"] += 1
+        elif score <= 80.0:
+            sim_buckets["b61_80"] += 1
+        else:
+            sim_buckets["b81_100"] += 1
+
+    max_sim_bucket = max(sim_buckets.values()) if total_scored_reports > 0 else 0
+    sim_chart = {
+        "total_reports": total_scored_reports,
+        "max_count": max_sim_bucket,
+        "b0_20": {"count": sim_buckets["b0_20"], "pct": round(sim_buckets["b0_20"] / total_scored_reports * 100, 1) if total_scored_reports > 0 else 0},
+        "b21_40": {"count": sim_buckets["b21_40"], "pct": round(sim_buckets["b21_40"] / total_scored_reports * 100, 1) if total_scored_reports > 0 else 0},
+        "b41_60": {"count": sim_buckets["b41_60"], "pct": round(sim_buckets["b41_60"] / total_scored_reports * 100, 1) if total_scored_reports > 0 else 0},
+        "b61_80": {"count": sim_buckets["b61_80"], "pct": round(sim_buckets["b61_80"] / total_scored_reports * 100, 1) if total_scored_reports > 0 else 0},
+        "b81_100": {"count": sim_buckets["b81_100"], "pct": round(sim_buckets["b81_100"] / total_scored_reports * 100, 1) if total_scored_reports > 0 else 0},
+    }
+
+    # 4. Chart E: My Programming Languages (reliable stored metadata)
+    lang_rows = conn.execute("""
+        SELECT programming_language, COUNT(*) AS count
+        FROM student_submissions
+        WHERE student_id = ?
+        GROUP BY programming_language
+        ORDER BY count DESC
+    """, (user["id"],)).fetchall()
+
+    lang_display_map = getattr(config, "LANGUAGE_DISPLAY_NAMES", {
+        "python": "Python", "java": "Java", "c": "C", "cpp": "C++", "javascript": "JavaScript"
+    })
+    total_langs_count = sum(r["count"] for r in lang_rows)
+    languages_data = []
+    for r in lang_rows:
+        raw_l = (r["programming_language"] or "").strip().lower()
+        display_name = lang_display_map.get(raw_l, raw_l.upper() if len(raw_l) <= 4 else raw_l.capitalize())
+        cnt = r["count"]
+        pct = round((cnt / total_langs_count * 100), 1) if total_langs_count > 0 else 0
+        languages_data.append({
+            "key": raw_l,
+            "name": display_name,
+            "count": cnt,
+            "pct": pct
+        })
+
+    # 5. Chart F: My Monthly Submission Activity (recent 6 months)
+    now = datetime.now()
+    monthly_activity = []
+    for i in range(5, -1, -1):
+        year = now.year
+        month = now.month - i
+        while month <= 0:
+            month += 12
+            year -= 1
+        ym_str = f"{year:04d}-{month:02d}"
+        dt = datetime(year, month, 1)
+        cnt = conn.execute(
+            "SELECT COUNT(*) FROM student_submissions WHERE student_id = ? AND SUBSTR(submitted_at, 1, 7) = ?",
+            (user["id"], ym_str)
+        ).fetchone()[0]
+        monthly_activity.append({
+            "ym": ym_str,
+            "label": dt.strftime("%b %Y"),
+            "short_label": dt.strftime("%b"),
+            "count": cnt
+        })
+
+    max_monthly = max((m["count"] for m in monthly_activity), default=0)
+    has_monthly_data = any(m["count"] > 0 for m in monthly_activity)
+    for m in monthly_activity:
+        m["bar_height"] = round((m["count"] / max_monthly * 85), 1) if max_monthly > 0 else 0
+
+    conn.close()
+
+    return render_template(
+        "student/dashboard.html",
+        user=user,
+        total_sub=total_sub,
+        reports_ready=reports_ready,
+        active_sub=active_sub,
+        status_chart=status_chart,
+        sim_chart=sim_chart,
+        languages_data=languages_data,
+        total_langs_count=total_langs_count,
+        monthly_activity=monthly_activity,
+        max_monthly=max_monthly,
+        has_monthly_data=has_monthly_data
+    )
+
+@student_bp.route("/active-submissions")
+@login_required
+@role_required("student")
+def active_submissions():
+    user = get_current_user()
+    conn = database.get_db_connection()
+    submissions = conn.execute("""
+        SELECT s.id, s.title, s.programming_language, s.source_filename, s.submitted_at, s.analysis_status,
+               a.title AS assignment_title, a.subject
+        FROM student_submissions s
+        JOIN assignments a ON s.assignment_id = a.id
+        WHERE s.student_id = ? AND s.analysis_status IN ('pending', 'processing')
+        ORDER BY s.submitted_at DESC
+    """, (user["id"],)).fetchall()
+    conn.close()
+    return render_template("student/active_submissions.html", user=user, submissions=submissions)
+
+@student_bp.route("/recent-submissions")
+@login_required
+@role_required("student")
+def recent_submissions():
+    user = get_current_user()
+    conn = database.get_db_connection()
+    page = request.args.get("page", 1, type=int)
+    if page < 1:
+        page = 1
+    per_page = 15
+    offset = (page - 1) * per_page
+
+    total_count = conn.execute(
+        "SELECT COUNT(*) FROM student_submissions WHERE student_id = ?",
         (user["id"],)
     ).fetchone()[0]
 
-    pending_sub = conn.execute(
-        "SELECT COUNT(*) FROM student_submissions WHERE student_id = ? AND analysis_status = 'pending'",
-        (user["id"],)
-    ).fetchone()[0]
+    submissions = conn.execute("""
+        SELECT s.id, s.title, s.programming_language, s.source_filename, s.submitted_at, s.analysis_status,
+               a.title AS assignment_title, a.subject,
+               r.id AS result_id, r.combined_similarity_score, r.similarity_label,
+               f.review_status
+        FROM student_submissions s
+        JOIN assignments a ON s.assignment_id = a.id
+        LEFT JOIN analysis_results r ON s.id = r.submission_id
+        LEFT JOIN faculty_reviews f ON r.id = f.analysis_result_id
+        WHERE s.student_id = ?
+        ORDER BY s.submitted_at DESC
+        LIMIT ? OFFSET ?
+    """, (user["id"], per_page, offset)).fetchall()
+    conn.close()
 
-    # Authorized historical submissions available
-    historical_count = conn.execute(
-        "SELECT COUNT(*) FROM historical_submissions WHERE is_authorized_for_students = 1"
-    ).fetchone()[0]
+    total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
 
-    # Active assignments count and list
-    active_assignments_count = conn.execute(
-        "SELECT COUNT(*) FROM assignments WHERE is_active = 1"
-    ).fetchone()[0]
+    return render_template(
+        "student/recent_submissions.html",
+        user=user,
+        submissions=submissions,
+        page=page,
+        total_pages=total_pages,
+        total_count=total_count
+    )
 
-    upcoming_assignments = conn.execute("""
+@student_bp.route("/assignments")
+@login_required
+@role_required("student")
+def assignments():
+    user = get_current_user()
+    conn = database.get_db_connection()
+
+    all_assignments = conn.execute("""
         SELECT a.id, a.title, a.subject, a.description, a.allowed_languages, a.deadline, a.is_active,
                sub.id AS submission_id, sub.analysis_status, res.combined_similarity_score, res.similarity_label
         FROM assignments a
@@ -63,165 +265,10 @@ def dashboard():
         LEFT JOIN analysis_results res ON sub.id = res.submission_id
         WHERE a.is_active = 1
         ORDER BY a.created_at DESC
-        LIMIT 6
     """, (user["id"], user["id"])).fetchall()
-
-    # Reviewed count for this student
-    reviewed_sub = conn.execute("""
-        SELECT COUNT(*) FROM student_submissions s
-        JOIN analysis_results r ON s.id = r.submission_id
-        JOIN faculty_reviews f ON r.id = f.analysis_result_id
-        WHERE s.student_id = ? AND f.review_status IN ('Reviewed', 'No Concern Identified')
-    """, (user["id"],)).fetchone()[0]
-
-    # Similarity breakdown for donut/distribution chart
-    low_sim_count = conn.execute("""
-        SELECT COUNT(*) FROM student_submissions s
-        JOIN analysis_results r ON s.id = r.submission_id
-        WHERE s.student_id = ? AND r.similarity_label = 'Low Similarity'
-    """, (user["id"],)).fetchone()[0]
-
-    med_sim_count = conn.execute("""
-        SELECT COUNT(*) FROM student_submissions s
-        JOIN analysis_results r ON s.id = r.submission_id
-        WHERE s.student_id = ? AND r.similarity_label = 'Medium Similarity'
-    """, (user["id"],)).fetchone()[0]
-
-    high_sim_count = conn.execute("""
-        SELECT COUNT(*) FROM student_submissions s
-        JOIN analysis_results r ON s.id = r.submission_id
-        WHERE s.student_id = ? AND r.similarity_label = 'High Similarity'
-    """, (user["id"],)).fetchone()[0]
-
-    # Recent submissions (last 5) with review status
-    recent_submissions = conn.execute("""
-        SELECT s.id, s.title, s.programming_language, s.source_filename, s.submitted_at, s.analysis_status,
-               a.title AS assignment_title, a.subject,
-               r.combined_similarity_score, r.similarity_label,
-               f.review_status
-        FROM student_submissions s
-        JOIN assignments a ON s.assignment_id = a.id
-        LEFT JOIN analysis_results r ON s.id = r.submission_id
-        LEFT JOIN faculty_reviews f ON r.id = f.analysis_result_id
-        WHERE s.student_id = ?
-        ORDER BY s.submitted_at DESC
-        LIMIT 5
-    """, (user["id"],)).fetchall()
-
-    # High similarity flagged submissions (for dismissible alert)
-    flagged_submissions = [s for s in recent_submissions if s["similarity_label"] == "High Similarity"]
-
-    # 7-day daily activity (last 7 days)
-    today = datetime.now()
-    activity_7d = []
-    for i in range(6, -1, -1):
-        day_date = today - timedelta(days=i)
-        day_str = day_date.strftime("%Y-%m-%d")
-        day_label = day_date.strftime("%b %d")
-        day_name = day_date.strftime("%a")
-        cnt = conn.execute(
-            "SELECT COUNT(*) FROM student_submissions WHERE student_id = ? AND SUBSTR(submitted_at, 1, 10) = ?",
-            (user["id"], day_str)
-        ).fetchone()[0]
-        activity_7d.append({"date": day_str, "label": day_label, "day": day_name, "count": cnt})
-
-    # 6-week activity
-    activity_6w = []
-    for w in range(5, -1, -1):
-        week_end = today - timedelta(days=w * 7)
-        week_start = week_end - timedelta(days=6)
-        start_str = week_start.strftime("%Y-%m-%d")
-        end_str = week_end.strftime("%Y-%m-%d")
-        week_label = f"{week_start.strftime('%b %d')}"
-        cnt = conn.execute(
-            "SELECT COUNT(*) FROM student_submissions WHERE student_id = ? AND SUBSTR(submitted_at, 1, 10) BETWEEN ? AND ?",
-            (user["id"], start_str, end_str)
-        ).fetchone()[0]
-        activity_6w.append({"label": week_label, "week": f"W{6-w}", "count": cnt})
-
-    # Health score (100 - average combined similarity of completed submissions)
-    avg_sim_row = conn.execute("""
-        SELECT AVG(r.combined_similarity_score)
-        FROM student_submissions s
-        JOIN analysis_results r ON s.id = r.submission_id
-        WHERE s.student_id = ? AND s.analysis_status = 'completed'
-    """, (user["id"],)).fetchone()
-    avg_sim = avg_sim_row[0] if avg_sim_row else None
-    if avg_sim is not None:
-        health_score = round(max(0.0, min(100.0, 100.0 - float(avg_sim))), 1)
-    else:
-        health_score = None
-
-    # Count of active assignments not yet submitted by this student (To Submit)
-    to_submit_count = conn.execute("""
-        SELECT COUNT(*) FROM assignments a
-        WHERE a.is_active = 1
-        AND a.id NOT IN (
-            SELECT DISTINCT assignment_id FROM student_submissions WHERE student_id = ?
-        )
-    """, (user["id"],)).fetchone()[0]
-
-    # Earliest upcoming deadline among active assignments
-    next_deadline_asgn = conn.execute("""
-        SELECT id, title, subject, deadline
-        FROM assignments
-        WHERE is_active = 1 AND deadline IS NOT NULL AND deadline != ''
-        AND deadline >= datetime('now')
-        ORDER BY deadline ASC
-        LIMIT 1
-    """).fetchone()
-
-    # High-similarity submissions without any clarification submitted yet
-    flagged_unclarified = conn.execute("""
-        SELECT s.id, s.title, a.title AS asgn_title, r.combined_similarity_score
-        FROM student_submissions s
-        JOIN assignments a ON s.assignment_id = a.id
-        JOIN analysis_results r ON s.id = r.submission_id
-        WHERE s.student_id = ? AND r.similarity_label = 'High Similarity'
-        AND s.id NOT IN (SELECT submission_id FROM clarification_requests WHERE student_id = ?)
-        ORDER BY s.submitted_at DESC
-    """, (user["id"], user["id"])).fetchall()
-
-    # Upcoming timeline (upcoming assignments ordered by deadline)
-    upcoming_timeline = conn.execute("""
-        SELECT id, title, subject, deadline, allowed_languages
-        FROM assignments
-        WHERE is_active = 1 AND deadline IS NOT NULL AND deadline != ''
-        ORDER BY deadline ASC
-        LIMIT 4
-    """).fetchall()
-
     conn.close()
 
-    similarity_dist = {
-        "low": low_sim_count,
-        "medium": med_sim_count,
-        "high": high_sim_count,
-        "total": low_sim_count + med_sim_count + high_sim_count
-    }
-
-    return render_template(
-        "student/dashboard.html",
-        user=user,
-        total_sub=total_sub,
-        completed_sub=completed_sub,
-        pending_sub=pending_sub,
-        reviewed_sub=reviewed_sub,
-        historical_count=historical_count,
-        active_assignments=active_assignments_count,
-        to_submit_count=to_submit_count,
-        upcoming_assignments=upcoming_assignments,
-        upcoming_timeline=upcoming_timeline,
-        next_deadline_asgn=next_deadline_asgn,
-        health_score=health_score,
-        recent_submissions=recent_submissions,
-        similarity_dist=similarity_dist,
-        activity_data=activity_7d,
-        activity_7d=activity_7d,
-        activity_6w=activity_6w,
-        flagged_submissions=flagged_submissions,
-        flagged_unclarified=flagged_unclarified
-    )
+    return render_template("student/assignments.html", user=user, assignments=all_assignments)
 
 @student_bp.route("/submit", methods=["GET", "POST"])
 @login_required

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Active Submissions &bull; CodeGuard{% endblock %}
+{% block breadcrumb_page %}Active Submissions{% endblock %}
+{% block page_title %}Active Submissions{% endblock %}
+
+{% block content %}
+<div class="active-submissions-page">
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-main-heading">Active Submissions</h1>
+      <p class="page-subheading">Source code submissions currently pending or processing in the automated AST analysis pipeline.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('student.submit') }}" class="btn btn-primary" id="activeSubmitNewBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Submit Code
+      </a>
+    </div>
+  </div>
+
+  <div class="card table-card">
+    {% if submissions and submissions|length > 0 %}
+      <div class="table-responsive">
+        <table class="data-table" id="activeSubmissionsTable">
+          <thead>
+            <tr>
+              <th style="width: 80px;">ID</th>
+              <th>Submission Title &amp; Filename</th>
+              <th>Assignment &amp; Subject</th>
+              <th>Language</th>
+              <th>Submitted Date</th>
+              <th>Current Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sub in submissions %}
+              <tr class="submission-row" data-sub-id="{{ sub.id }}">
+                <td data-label="ID">
+                  <span class="code-id-chip">#{{ sub.id }}</span>
+                </td>
+                <td data-label="Submission">
+                  <div class="table-asgn-title">{{ sub.title }}</div>
+                  <div class="table-asgn-meta"><code>{{ sub.source_filename or 'source_code' }}</code></div>
+                </td>
+                <td data-label="Assignment">
+                  <div class="table-asgn-title">{{ sub.assignment_title }}</div>
+                  <div class="table-asgn-meta">{{ sub.subject }}</div>
+                </td>
+                <td data-label="Language">
+                  <span class="lang-pill lang-pill-{{ sub.programming_language|lower }}">
+                    {{ sub.programming_language|upper }}
+                  </span>
+                </td>
+                <td data-label="Submitted">
+                  <span class="date-main">{{ sub.submitted_at[:10] }}</span>
+                  <span class="time-sub">{{ sub.submitted_at[11:16] }}</span>
+                </td>
+                <td data-label="Status">
+                  <span class="badge badge-warning">
+                    <span class="spinner-tiny" style="margin-right: 4px;"></span> {{ sub.analysis_status|capitalize }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="table-empty-state">
+        <div class="empty-icon-box">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/>
+          </svg>
+        </div>
+        <h3 class="table-empty-title">No active submissions in progress</h3>
+        <p class="table-empty-subtitle">You currently have no code submissions pending or processing in the queue. All previous submissions have finished processing.</p>
+        <a href="{{ url_for('student.submit') }}" class="btn btn-primary btn-sm">+ Submit New Code</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

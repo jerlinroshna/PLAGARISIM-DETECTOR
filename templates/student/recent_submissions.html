@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Recent Submissions &bull; CodeGuard{% endblock %}
+{% block breadcrumb_page %}Recent Submissions{% endblock %}
+{% block page_title %}Recent Submissions{% endblock %}
+
+{% block content %}
+<div class="recent-submissions-page">
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-main-heading">Recent Submissions</h1>
+      <p class="page-subheading">Comprehensive history of your source code submissions, analysis results, and review statuses.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('student.submit') }}" class="btn btn-primary" id="recentSubmitNewBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Submit Code
+      </a>
+    </div>
+  </div>
+
+  <div class="card table-card">
+    {% if submissions and submissions|length > 0 %}
+      <div class="table-responsive">
+        <table class="data-table" id="allRecentSubmissionsTable">
+          <thead>
+            <tr>
+              <th style="width: 70px;">ID</th>
+              <th>Submission Title &amp; Filename</th>
+              <th>Assignment &amp; Subject</th>
+              <th>Language</th>
+              <th>Submitted Date</th>
+              <th>Status</th>
+              <th>Similarity Score</th>
+              <th>Faculty Review</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sub in submissions %}
+              <tr class="submission-row" data-sub-id="{{ sub.id }}">
+                <td data-label="ID">
+                  <span class="code-id-chip">#{{ sub.id }}</span>
+                </td>
+                <td data-label="Submission">
+                  <div class="table-asgn-title">{{ sub.title }}</div>
+                  <div class="table-asgn-meta"><code>{{ sub.source_filename or 'source_code' }}</code></div>
+                </td>
+                <td data-label="Assignment">
+                  <div class="table-asgn-title">{{ sub.assignment_title }}</div>
+                  <div class="table-asgn-meta">{{ sub.subject }}</div>
+                </td>
+                <td data-label="Language">
+                  <span class="lang-pill lang-pill-{{ sub.programming_language|lower }}">
+                    {{ sub.programming_language|upper }}
+                  </span>
+                </td>
+                <td data-label="Submitted">
+                  <span class="date-main">{{ sub.submitted_at[:10] }}</span>
+                  <span class="time-sub">{{ sub.submitted_at[11:16] }}</span>
+                </td>
+                <td data-label="Status">
+                  {% if sub.analysis_status == 'completed' %}
+                    <span class="badge badge-success">Completed</span>
+                  {% elif sub.analysis_status in ['pending', 'processing'] %}
+                    <span class="badge badge-warning">
+                      <span class="spinner-tiny" style="margin-right: 3px;"></span> Processing
+                    </span>
+                  {% elif sub.analysis_status == 'failed' %}
+                    <span class="badge badge-danger">Failed</span>
+                  {% else %}
+                    <span class="badge badge-neutral">{{ sub.analysis_status|capitalize }}</span>
+                  {% endif %}
+                </td>
+                <td data-label="Similarity">
+                  {% if sub.analysis_status == 'completed' and sub.combined_similarity_score is not none %}
+                    {% if sub.similarity_label == 'Low Similarity' or sub.combined_similarity_score < 30 %}
+                      <span class="badge badge-success">{{ sub.combined_similarity_score }}% &bull; Low</span>
+                    {% elif sub.similarity_label == 'Medium Similarity' or sub.combined_similarity_score < 70 %}
+                      <span class="badge badge-warning">{{ sub.combined_similarity_score }}% &bull; Medium</span>
+                    {% else %}
+                      <span class="badge badge-danger">{{ sub.combined_similarity_score }}% &bull; High</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted" style="font-size: 0.82rem;">&mdash;</span>
+                  {% endif %}
+                </td>
+                <td data-label="Review">
+                  {% if sub.review_status in ['Reviewed', 'No Concern Identified', 'Cleared'] %}
+                    <span class="badge badge-success">Cleared</span>
+                  {% elif sub.review_status in ['Under Investigation', 'Further Investigation Required'] %}
+                    <span class="badge badge-warning">Investigation</span>
+                  {% elif sub.review_status == 'Warning' %}
+                    <span class="badge badge-warning">Warning</span>
+                  {% elif sub.review_status == 'Violation Confirmed' %}
+                    <span class="badge badge-danger">Violation</span>
+                  {% elif sub.analysis_status == 'completed' %}
+                    <span class="badge badge-neutral">Pending Review</span>
+                  {% else %}
+                    <span class="text-muted" style="font-size: 0.82rem;">&mdash;</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: right;" data-label="Action">
+                  {% if sub.analysis_status == 'completed' and sub.result_id %}
+                    <a href="{{ url_for('student.submission_detail', sub_id=sub.id) }}" class="table-action-link" title="View Full Report">
+                      View Report &rarr;
+                    </a>
+                  {% else %}
+                    <span class="text-muted" style="font-size: 0.82rem;">In Queue</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if total_pages > 1 %}
+        <div class="pagination-footer">
+          <div class="pagination-info">
+            Showing Page <strong>{{ page }}</strong> of <strong>{{ total_pages }}</strong> ({{ total_count }} total submissions)
+          </div>
+          <div class="pagination-buttons">
+            {% if page > 1 %}
+              <a href="{{ url_for('student.recent_submissions', page=page-1) }}" class="btn btn-sm btn-outline">&larr; Previous</a>
+            {% endif %}
+            {% if page < total_pages %}
+              <a href="{{ url_for('student.recent_submissions', page=page+1) }}" class="btn btn-sm btn-outline">Next &rarr;</a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="table-empty-state">
+        <div class="empty-icon-box">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+        </div>
+        <h3 class="table-empty-title">No submissions found</h3>
+        <p class="table-empty-subtitle">You have not submitted any code files yet. Click below to submit your first assignment.</p>
+        <a href="{{ url_for('student.submit') }}" class="btn btn-primary btn-sm">+ Submit Your First Code File</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

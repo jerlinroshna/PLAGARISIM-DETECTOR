@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Assignments &bull; CodeGuard{% endblock %}
+{% block breadcrumb_page %}Assignments{% endblock %}
+{% block page_title %}Course Assignments{% endblock %}
+
+{% block content %}
+<div class="assignments-page">
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-main-heading">Course Assignments</h1>
+      <p class="page-subheading">View open programming assignments, submission deadlines, and current pre-screening results.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('student.submit') }}" class="btn btn-primary" id="assignmentsSubmitNewBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Submit Code
+      </a>
+    </div>
+  </div>
+
+  {% if assignments and assignments|length > 0 %}
+    <div class="assignments-card-grid">
+      {% for asgn in assignments %}
+        <div class="assignment-tile card {% if not asgn.is_active %}assignment-closed{% endif %}" data-asgn-id="{{ asgn.id }}">
+          <div class="assignment-tile-top">
+            <span class="subject-badge">{{ asgn.subject }}</span>
+            {% if asgn.deadline %}
+              <span class="deadline-countdown-badge" title="Due Date">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                </svg>
+                <span>Due: {{ asgn.deadline[:10] }}</span>
+              </span>
+            {% else %}
+              <span class="deadline-countdown-badge">Open Term</span>
+            {% endif %}
+          </div>
+
+          <h3 class="assignment-tile-title">{{ asgn.title }}</h3>
+          
+          <p class="assignment-tile-desc">
+            {{ (asgn.description or 'No assignment description provided.')[:120] }}{% if asgn.description and asgn.description|length > 120 %}...{% endif %}
+          </p>
+
+          <div class="allowed-langs-row">
+            <span class="langs-label">Allowed:</span>
+            <div class="lang-pills-wrap">
+              {% for lang in asgn.allowed_languages.split(',') %}
+                {% set l_clean = lang.strip().lower() %}
+                <span class="lang-pill lang-pill-{{ l_clean }}">{{ lang.strip()|upper }}</span>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="assignment-tile-footer">
+            <div class="status-indicator-col">
+              {% if not asgn.is_active %}
+                <span class="asgn-status-badge status-closed">Closed</span>
+              {% elif not asgn.submission_id %}
+                <span class="asgn-status-badge status-unsubmitted">
+                  <span class="status-dot"></span> Not Submitted
+                </span>
+              {% elif asgn.analysis_status == 'pending' or asgn.analysis_status == 'processing' %}
+                <span class="asgn-status-badge status-pending">
+                  <span class="spinner-tiny"></span> Screening...
+                </span>
+              {% elif asgn.analysis_status == 'completed' %}
+                <span class="asgn-status-badge status-cleared">
+                  &#10003; Screened ({{ asgn.combined_similarity_score or 0 }}%)
+                </span>
+              {% endif %}
+            </div>
+
+            {% if asgn.is_active %}
+              <a href="{{ url_for('student.submit', assignment_id=asgn.id) }}"
+                 class="btn btn-sm btn-primary asgn-submit-btn"
+                 id="submitAsgnBtn_{{ asgn.id }}">
+                {% if asgn.submission_id %}Re-Submit &rarr;{% else %}Submit &rarr;{% endif %}
+              </a>
+            {% else %}
+              <button type="button" class="btn btn-sm btn-disabled asgn-submit-btn" disabled>
+                Closed
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card empty-state-box">
+      <div class="empty-icon-wrap">&#128218;</div>
+      <h3 class="empty-title">No Active Assignments</h3>
+      <p class="empty-desc">There are currently no assignments open for submission. Check back later or review your previous submissions.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
