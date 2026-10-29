@@ -6730,3 +6730,16 @@ body.theme-dark .theme-toggle-btn .moon-icon {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Left sidebar only: remove Notifications & badge, Academic Integrity, Profile */
+.sidebar a[href*="notifications"],
+.sidebar a[href*="academic-integrity"],
+.sidebar a[href*="profile"],
+.sidebar .sidebar-footer,
+.sidebar .nav-badge-pill,
+.sidebar .notif-badge-count,
+.sidebar .nav-pill-badge,
+.sidebar .badge {
+  display: none !important;
+}

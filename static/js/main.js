@@ -579,7 +579,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // 15. Dynamic Floating Tooltip for Student Mini Sidebar (Immune to overflow clipping)
-  const miniSidebar = document.querySelector(".sidebar-student-mini");
+  const miniSidebar = document.querySelector(".sidebar-student-mini, .sidebar");
   if (miniSidebar) {
     let floatingTooltip = document.getElementById("sidebar-floating-tooltip");
     if (!floatingTooltip) {
@@ -600,6 +600,7 @@ document.addEventListener("DOMContentLoaded", function () {
       item.removeAttribute("title");
 
       item.addEventListener("mouseenter", function () {
+        if (window.innerWidth <= 1024) return;
         const rect = item.getBoundingClientRect();
         floatingTooltip.textContent = tooltipText;
         floatingTooltip.style.top = (rect.top + rect.height / 2) + "px";

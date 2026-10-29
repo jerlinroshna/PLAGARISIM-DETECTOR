@@ -13,120 +13,82 @@
 <body>
   {% if current_user %}
   <div class="app-container">
-    <!-- Left Navigation Sidebar (~260px) -->
-    <aside class="sidebar" id="appSidebar">
+    <!-- Left Navigation Sidebar -->
+    <aside class="sidebar sidebar-student-mini" id="appSidebar">
       <div class="sidebar-header">
         <div class="sidebar-emblem">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 3.32L17.84 9 12 12.18 6.16 9 12 6.32zM6 12.5v4.25c0 2.3 2.69 4.25 6 4.25s6-1.95 6-4.25V12.5l-6 3.27-6-3.27z"/>
           </svg>
         </div>
-        <div class="sidebar-brand-text">
-          <div class="sidebar-title">Academic Integrity</div>
-          <div class="sidebar-subtitle">
-            {% if current_user.role == 'student' %}Student Workspace{% else %}Faculty Workspace{% endif %}
-          </div>
-        </div>
-        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">&times;</button>
       </div>
 
       <nav class="sidebar-nav">
         {% if current_user.role == 'student' %}
-          <!-- Core Navigation Section -->
-          <div class="nav-section-label">Core Navigation</div>
-          <div class="nav-group-items">
-            <a href="{{ url_for('student.dashboard') }}" class="nav-item {% if request.endpoint == 'student.dashboard' %}active{% endif %}" data-tooltip="Dashboard" title="Dashboard">
-              <span class="nav-icon">
-                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-              </span>
-              <span class="nav-label">Dashboard</span>
-            </a>
-            <a href="{{ url_for('student.submit') }}" class="nav-item {% if request.endpoint == 'student.submit' %}active{% endif %}" data-tooltip="Submit Code" title="Submit Code">
-              <span class="nav-icon">
-                <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
-              </span>
-              <span class="nav-label">Submit Code</span>
-            </a>
-            <a href="{{ url_for('student.submissions') }}" class="nav-item {% if request.endpoint in ['student.submissions', 'student.submission_detail'] %}active{% endif %}" data-tooltip="My Submissions" title="My Submissions">
-              <span class="nav-icon">
-                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-              </span>
-              <span class="nav-label">My Submissions</span>
-            </a>
-            <a href="{{ url_for('student.historical') }}" class="nav-item {% if request.endpoint == 'student.historical' %}active{% endif %}" data-tooltip="Historical References" title="Historical References">
-              <span class="nav-icon">
-                <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
-              </span>
-              <span class="nav-label">Historical References</span>
-            </a>
-            <a href="{{ url_for('student.reports') }}" class="nav-item {% if request.endpoint == 'student.reports' %}active{% endif %}" data-tooltip="Reports" title="Reports">
-              <span class="nav-icon">
-                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-              </span>
-              <span class="nav-label">Reports</span>
-            </a>
-          </div>
-
-          <!-- Support & Learning Section -->
-          <div class="nav-section-label" style="margin-top: 14px;">Support &amp; Learning</div>
-          <div class="nav-group-items">
-            <a href="{{ url_for('student.notifications') }}" class="nav-item {% if request.endpoint == 'student.notifications' %}active{% endif %}" data-tooltip="Notifications" title="Notifications">
-              <span class="nav-icon">
-                <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
-              </span>
-              <span class="nav-label">Notifications</span>
-              {% if unread_notifications_count and unread_notifications_count > 0 %}
-                <span class="nav-pill-badge">{{ '9+' if unread_notifications_count > 9 else unread_notifications_count }}</span>
-              {% endif %}
-            </a>
-            <a href="{{ url_for('student.academic_integrity') }}" class="nav-item {% if request.endpoint == 'student.academic_integrity' %}active{% endif %}" data-tooltip="Academic Integrity" title="Academic Integrity">
-              <span class="nav-icon">
-                <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
-              </span>
-              <span class="nav-label">Academic Integrity</span>
-            </a>
-            <a href="{{ url_for('student.profile') }}" class="nav-item {% if request.endpoint == 'student.profile' %}active{% endif %}" data-tooltip="Profile" title="Profile">
-              <span class="nav-icon">
-                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-              </span>
-              <span class="nav-label">Profile</span>
-            </a>
-          </div>
-        {% elif current_user.role == 'faculty' %}
-          <div class="nav-section-title">Faculty Portal</div>
-          <a href="{{ url_for('faculty.dashboard') }}" class="nav-item {% if request.endpoint == 'faculty.dashboard' %}active{% endif %}">
+          <a href="{{ url_for('student.dashboard') }}" class="nav-item {% if request.endpoint == 'student.dashboard' %}active{% endif %}" data-tooltip="Dashboard" title="Dashboard">
             <span class="nav-icon">
               <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
             </span>
             <span class="nav-label">Dashboard</span>
           </a>
-          <a href="{{ url_for('faculty.submit') }}" class="nav-item {% if request.endpoint == 'faculty.submit' %}active{% endif %}">
+          <a href="{{ url_for('student.submit') }}" class="nav-item {% if request.endpoint == 'student.submit' %}active{% endif %}" data-tooltip="Submit Code" title="Submit Code">
             <span class="nav-icon">
               <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
             </span>
             <span class="nav-label">Submit Code</span>
           </a>
-          <a href="{{ url_for('faculty.historical_repo') }}" class="nav-item {% if request.endpoint == 'faculty.historical_repo' %}active{% endif %}">
+          <a href="{{ url_for('student.submissions') }}" class="nav-item {% if request.endpoint in ['student.submissions', 'student.submission_detail'] %}active{% endif %}" data-tooltip="My Submissions" title="My Submissions">
             <span class="nav-icon">
-              <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
             </span>
-            <span class="nav-label">Historical Submissions</span>
+            <span class="nav-label">My Submissions</span>
           </a>
-          <a href="{{ url_for('faculty.submissions') }}" class="nav-item {% if request.endpoint in ['faculty.submissions', 'faculty.analysis_detail'] %}active{% endif %}">
+          <a href="{{ url_for('student.historical') }}" class="nav-item {% if request.endpoint == 'student.historical' %}active{% endif %}" data-tooltip="Historical References" title="Historical References">
             <span class="nav-icon">
-              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2zm0 12H4V8h16v10z"/></svg>
             </span>
-            <span class="nav-label">Results</span>
+            <span class="nav-label">Historical References</span>
           </a>
-          <a href="{{ url_for('faculty.reports') }}" class="nav-item {% if request.endpoint == 'faculty.reports' %}active{% endif %}">
+          <a href="{{ url_for('student.reports') }}" class="nav-item {% if request.endpoint == 'student.reports' %}active{% endif %}" data-tooltip="Reports" title="Reports">
             <span class="nav-icon">
-              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
             </span>
             <span class="nav-label">Reports</span>
           </a>
-          <a href="{{ url_for('faculty.assignments') }}" class="nav-item {% if request.endpoint == 'faculty.assignments' %}active{% endif %}">
+        {% elif current_user.role == 'faculty' %}
+          <a href="{{ url_for('faculty.dashboard') }}" class="nav-item {% if request.endpoint == 'faculty.dashboard' %}active{% endif %}" data-tooltip="Dashboard" title="Dashboard">
             <span class="nav-icon">
-              <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+            </span>
+            <span class="nav-label">Dashboard</span>
+          </a>
+          <a href="{{ url_for('faculty.submit') }}" class="nav-item {% if request.endpoint == 'faculty.submit' %}active{% endif %}" data-tooltip="Submit Code" title="Submit Code">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+            </span>
+            <span class="nav-label">Submit Code</span>
+          </a>
+          <a href="{{ url_for('faculty.historical_repo') }}" class="nav-item {% if request.endpoint == 'faculty.historical_repo' %}active{% endif %}" data-tooltip="Historical Submissions" title="Historical Submissions">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2zm0 12H4V8h16v10z"/></svg>
+            </span>
+            <span class="nav-label">Historical Submissions</span>
+          </a>
+          <a href="{{ url_for('faculty.submissions') }}" class="nav-item {% if request.endpoint in ['faculty.submissions', 'faculty.analysis_detail'] %}active{% endif %}" data-tooltip="Results" title="Results">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            </span>
+            <span class="nav-label">Results</span>
+          </a>
+          <a href="{{ url_for('faculty.reports') }}" class="nav-item {% if request.endpoint == 'faculty.reports' %}active{% endif %}" data-tooltip="Reports" title="Reports">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+            </span>
+            <span class="nav-label">Reports</span>
+          </a>
+          <a href="{{ url_for('faculty.assignments') }}" class="nav-item {% if request.endpoint == 'faculty.assignments' %}active{% endif %}" data-tooltip="Assignments" title="Assignments">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
             </span>
             <span class="nav-label">Assignments</span>
           </a>
@@ -141,17 +103,6 @@
           <span class="nav-label">Logout</span>
         </a>
       </nav>
-
-
-      <div class="sidebar-footer">
-        <div class="sidebar-user-card">
-          <div class="sidebar-user-avatar">{{ current_user.username[:3] }}</div>
-          <div class="sidebar-user-info">
-            <div class="sidebar-user-name">{{ current_user.full_name }}</div>
-            <div class="sidebar-user-meta">{{ current_user.username }} &bull; {{ current_user.role|capitalize }}</div>
-          </div>
-        </div>
-      </div>
     </aside>
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
@@ -202,7 +153,7 @@
           </button>
 
           {% if current_user.role == 'student' %}
-          <!-- Notification Bell with Popover -->
+
           <div style="position: relative;">
             <button type="button" class="notif-bell-btn" id="notifBellBtn" aria-label="Notifications" title="Notifications">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
@@ -266,8 +217,16 @@
                 <a href="{{ url_for('student.profile') }}" class="user-menu-link">
                   <span>&#128100;</span> Profile
                 </a>
+                <a href="{{ url_for('student.profile') }}" class="user-menu-link">
+                  <span>&#9881;</span> Settings
+                </a>
                 <a href="{{ url_for('student.academic_integrity') }}" class="user-menu-link">
                   <span>&#128220;</span> Academic Integrity
+                </a>
+                <div class="user-menu-divider"></div>
+              {% elif current_user.role == 'faculty' %}
+                <a href="{{ url_for('faculty.profile') }}" class="user-menu-link">
+                  <span>&#9881;</span> Profile
                 </a>
                 <div class="user-menu-divider"></div>
               {% endif %}
@@ -313,7 +272,7 @@
     </div>
   {% endif %}
 
-  <script src="{{ url_for('static', filename='js/main.js') }}?v=3.2"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}?v=3.3"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
