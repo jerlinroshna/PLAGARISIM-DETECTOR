@@ -1,7 +1,67 @@
 // CodeGuard Code Editor, Upload & Submission Validation Module
 document.addEventListener("DOMContentLoaded", function () {
-  // 3. Tab switching (e.g. Upload File vs Paste Code)
+  // 3. Multi-Language Syntax Auto-Detector
+  function detectLanguageFromCode(code) {
+    if (!code || !code.trim()) return null;
+    const s = code.trim();
+
+    // C++ indicators
+    if (/#include\s*<iostream>|std::|cout\s*<<|cin\s*>>|namespace\s+std|#include\s*<vector>|#include\s*<string>/i.test(s)) {
+      return "cpp";
+    }
+    // C indicators
+    if (/#include\s*<stdio\.h>|#include\s*<stdlib\.h>|#include\s*<string\.h>|printf\s*\(|scanf\s*\(|int\s+main\s*\(/i.test(s)) {
+      return "c";
+    }
+    // Java indicators
+    if (/public\s+class\s+|System\.out\.(println|print)|public\s+static\s+void\s+main/i.test(s)) {
+      return "java";
+    }
+    // Python indicators
+    if (/def\s+[a-zA-Z0-9_]+\s*\(|import\s+[a-zA-Z0-9_]+|from\s+[a-zA-Z0-9_]+\s+import|if\s+__name__\s*==|elif\s+|print\s*\(/i.test(s)) {
+      return "python";
+    }
+    // JavaScript indicators
+    if (/console\.log\s*\(|function\s+[a-zA-Z0-9_]+\s*\(|const\s+[a-zA-Z0-9_]+\s*=|let\s+[a-zA-Z0-9_]+\s*=|document\.getElementById/i.test(s)) {
+      return "javascript";
+    }
+    return null;
+  }
+
+  // 4. Tab switching (Upload File vs Paste Code) & Mode Tracking
   const tabButtons = document.querySelectorAll(".portal-tab-btn");
+  const submissionModeInput = document.getElementById("submission_mode");
+  const dropzone = document.getElementById("uploadDropzone");
+  const fileInput = document.getElementById("code_file");
+  const filePreview = document.getElementById("filePreviewInfo");
+  const langSelect = document.getElementById("programming_language");
+  const codeTextarea = document.getElementById("code_text");
+  const detectedLangBadge = document.getElementById("detectedLangBadge");
+  const chkLangName = document.getElementById("chk-lang-name");
+
+  function handlePastedCodeAnalysis() {
+    if (!codeTextarea) return;
+    const text = codeTextarea.value;
+    const detected = detectLanguageFromCode(text);
+
+    if (detected && langSelect) {
+      if (langSelect.value === "auto" || langSelect.getAttribute("data-user-selected") !== "true") {
+        langSelect.value = detected;
+      }
+      if (detectedLangBadge) {
+        detectedLangBadge.textContent = "Detected: " + detected.toUpperCase();
+        detectedLangBadge.style.display = "inline-block";
+      }
+    } else if (detectedLangBadge) {
+      if (langSelect && langSelect.value !== "auto") {
+        detectedLangBadge.textContent = "Language: " + langSelect.value.toUpperCase();
+        detectedLangBadge.style.display = "inline-block";
+      } else {
+        detectedLangBadge.style.display = "none";
+      }
+    }
+  }
+
   tabButtons.forEach(btn => {
     btn.addEventListener("click", function () {
       const targetId = this.getAttribute("data-tab-target");
@@ -14,15 +74,39 @@ document.addEventListener("DOMContentLoaded", function () {
       this.classList.add("active");
       const target = document.getElementById(targetId);
       if (target) target.style.display = "block";
+
+      if (targetId === "tabPasteCode") {
+        if (submissionModeInput) submissionModeInput.value = "paste";
+        if (fileInput) fileInput.value = "";
+        if (filePreview) filePreview.style.display = "none";
+        if (codeTextarea) {
+          codeTextarea.focus();
+          handlePastedCodeAnalysis();
+        }
+      } else {
+        if (submissionModeInput) submissionModeInput.value = "upload";
+      }
+      updateChecklist();
     });
   });
 
-  // 4. File Drag & Drop and Preview
-  const dropzone = document.getElementById("uploadDropzone");
-  const fileInput = document.getElementById("code_file");
-  const filePreview = document.getElementById("filePreviewInfo");
-  const langSelect = document.getElementById("programming_language");
+  // Quick Language Select Buttons
+  document.querySelectorAll(".btn-lang-quick").forEach(btn => {
+    btn.addEventListener("click", function () {
+      const l = this.getAttribute("data-lang");
+      if (l && langSelect) {
+        langSelect.value = l;
+        langSelect.setAttribute("data-user-selected", "true");
+        if (detectedLangBadge) {
+          detectedLangBadge.textContent = "Language: " + l.toUpperCase();
+          detectedLangBadge.style.display = "inline-block";
+        }
+        updateChecklist();
+      }
+    });
+  });
 
+  // 5. File Drag & Drop and Preview
   function handleFileSelected(file) {
     if (!file) return;
     const filename = file.name.toLowerCase();
@@ -60,6 +144,7 @@ document.addEventListener("DOMContentLoaded", function () {
       filePreview.style.display = "block";
     }
 
+    if (submissionModeInput) submissionModeInput.value = "upload";
     updateChecklist();
   }
 
@@ -93,8 +178,7 @@ document.addEventListener("DOMContentLoaded", function () {
     dropzone.addEventListener("click", () => fileInput.click());
   }
 
-  // 5. Code editor statistics and Tab key handling
-  const codeTextarea = document.getElementById("code_text");
+  // 6. Code editor statistics and Tab key handling
   const statLines = document.getElementById("stat-lines");
   const statChars = document.getElementById("stat-chars");
   const statFuncs = document.getElementById("stat-funcs");
@@ -106,12 +190,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const lines = text ? text.split("\n").length : 0;
     const chars = text.length;
 
-    // Detect function patterns statically across languages (e.g. def foo, function bar, void foo(), int main())
     const funcRegex = /(def\s+[a-zA-Z0-9_]+|function\s+[a-zA-Z0-9_]+|[a-zA-Z0-9_]+\s*\([^)]*\)\s*\{|void\s+[a-zA-Z0-9_]+|int\s+[a-zA-Z0-9_]+)/g;
     const funcMatches = text.match(funcRegex);
     const funcs = funcMatches ? funcMatches.length : 0;
 
-    // Detect comments statically
     const commentRegex = /(\/\/.*|#.*|\/\*[\s\S]*?\*\/)/g;
     const commentMatches = text.match(commentRegex);
     const comments = commentMatches ? commentMatches.length : 0;
@@ -125,7 +207,16 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   if (codeTextarea) {
-    codeTextarea.addEventListener("input", calculateCodeStats);
+    codeTextarea.addEventListener("input", function () {
+      calculateCodeStats();
+      handlePastedCodeAnalysis();
+    });
+    codeTextarea.addEventListener("paste", function () {
+      setTimeout(() => {
+        calculateCodeStats();
+        handlePastedCodeAnalysis();
+      }, 50);
+    });
     codeTextarea.addEventListener("keydown", function (e) {
       if (e.key === "Tab") {
         e.preventDefault();
@@ -134,11 +225,12 @@ document.addEventListener("DOMContentLoaded", function () {
         this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
         this.selectionStart = this.selectionEnd = start + 4;
         calculateCodeStats();
+        handlePastedCodeAnalysis();
       }
     });
   }
 
-  // 6. Live Static Validation Checklist & Submit enabler
+  // 7. Live Static Validation Checklist & Submit enabler
   const asgnSelect = document.getElementById("assignment_id");
   const chkAsgn = document.getElementById("chk-asgn");
   const chkLang = document.getElementById("chk-lang");
@@ -157,13 +249,37 @@ document.addEventListener("DOMContentLoaded", function () {
     let validSize = true;
 
     if (asgnSelect && asgnSelect.value) hasAsgn = true;
-    if (langSelect && langSelect.value && langSelect.value !== "auto") hasLang = true;
 
-    if (fileInput && fileInput.files && fileInput.files.length > 0) {
-      hasCode = true;
-      if (fileInput.files[0].size > 5 * 1024 * 1024) validSize = false;
-    } else if (codeTextarea && codeTextarea.value.trim().length > 0) {
-      hasCode = true;
+    const isPaste = (submissionModeInput && submissionModeInput.value === "paste");
+
+    if (isPaste) {
+      if (codeTextarea && codeTextarea.value.trim().length > 0) {
+        hasCode = true;
+        // Auto-detect language if still auto
+        if (langSelect && langSelect.value === "auto") {
+          const detected = detectLanguageFromCode(codeTextarea.value);
+          if (detected) {
+            langSelect.value = detected;
+            hasLang = true;
+          }
+        } else if (langSelect && langSelect.value && langSelect.value !== "auto") {
+          hasLang = true;
+        }
+      }
+    } else {
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        hasCode = true;
+        if (fileInput.files[0].size > 5 * 1024 * 1024) validSize = false;
+        if (langSelect && langSelect.value && langSelect.value !== "auto") hasLang = true;
+      } else if (codeTextarea && codeTextarea.value.trim().length > 0) {
+        hasCode = true;
+        if (langSelect && langSelect.value && langSelect.value !== "auto") hasLang = true;
+      }
+    }
+
+    if (chkLangName && langSelect) {
+      const curVal = langSelect.value;
+      chkLangName.textContent = (curVal && curVal !== "auto") ? curVal.toUpperCase() : "Auto-detecting...";
     }
 
     if (chkAsgn) setCheckStatus(chkAsgn, hasAsgn);

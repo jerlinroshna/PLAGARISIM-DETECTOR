@@ -84,6 +84,8 @@
       </div>
 
       <div class="portal-tabs-container">
+        <!-- Hidden input to track active mode: "upload" or "paste" -->
+        <input type="hidden" name="submission_mode" id="submission_mode" value="upload">
         <!-- Tab Switches -->
         <div class="portal-tabs">
           <button type="button" class="portal-tab-btn active" data-tab-target="tabUploadFile">
@@ -108,9 +110,19 @@
         <!-- Tab 2: Paste Code -->
         <div class="portal-tab-content" id="tabPasteCode" style="display: none;">
           <div class="editor-wrapper">
-            <div class="editor-toolbar">
-              <span>Source Code Input (Execution-Safe Monospace Editor)</span>
-              <span>Tab key inserts 4 spaces</span>
+            <div class="editor-toolbar" style="flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span>Source Code Input (Execution-Safe Monospace Editor)</span>
+                <span id="detectedLangBadge" class="badge" style="display: none; background: #e0f2fe; color: #0369a1; font-weight: 600; font-size: 0.74rem;"></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem;">
+                <span style="color: #64748b;">Language:</span>
+                <button type="button" class="btn-lang-quick" data-lang="python" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">Python</button>
+                <button type="button" class="btn-lang-quick" data-lang="c" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">C</button>
+                <button type="button" class="btn-lang-quick" data-lang="cpp" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">C++</button>
+                <button type="button" class="btn-lang-quick" data-lang="java" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">Java</button>
+                <button type="button" class="btn-lang-quick" data-lang="javascript" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">JS</button>
+              </div>
             </div>
             <textarea name="code_text" id="code_text" class="code-editor-textarea" placeholder="// Paste or write your source code here...
 #include <stdio.h>
@@ -144,7 +156,7 @@ int main() {
           </div>
           <div style="display: flex; align-items: center; gap: 10px;">
             <span id="chk-lang" style="width: 18px; text-align: center; color: #94a3b8;">○</span>
-            <span>Supported programming language</span>
+            <span>Programming language: <strong id="chk-lang-name" style="color: #475569;">Auto-detect</strong></span>
           </div>
           <div style="display: flex; align-items: center; gap: 10px;">
             <span id="chk-code" style="width: 18px; text-align: center; color: #94a3b8;">○</span>

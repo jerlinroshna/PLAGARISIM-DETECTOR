@@ -58,6 +58,7 @@
     <!-- Submission & Historical Reference Summary -->
     <div style="font-size: 0.88rem; line-height: 2;">
       <div><strong>Student:</strong> {{ sub.student_name }} (<code>{{ sub.student_username }}</code>)</div>
+      <div><strong>Submission Title:</strong> <span style="font-weight: 600; color: var(--primary);">{{ sub.title }}</span></div>
       <div><strong>Assignment:</strong> {{ sub.assignment_title }}</div>
       <div><strong>Language:</strong> <code>{{ sub.programming_language|upper }}</code></div>
       <div>

@@ -128,6 +128,14 @@ int main() {
         self.assertEqual(res["summary"], "No comparable historical submissions found.")
         self.assertEqual(res["combined_score"], 0.0)
 
+        # Clean up test assignment and submission
+        conn = database.get_db_connection()
+        conn.execute("DELETE FROM analysis_results WHERE submission_id = ?", (sub_id,))
+        conn.execute("DELETE FROM student_submissions WHERE id = ?", (sub_id,))
+        conn.execute("DELETE FROM assignments WHERE id = ?", (asgn_id,))
+        conn.commit()
+        conn.close()
+
     def test_csv_report_export(self):
         """Tests that faculty can download CSV report."""
         with self.client.session_transaction() as sess:

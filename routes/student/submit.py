@@ -1,3 +1,4 @@
+import re
 import os
 import csv
 import io
@@ -13,6 +14,22 @@ import config
 import database
 from analyzers.comparator import CodeComparator
 from routes.student import student_bp, SUPPORTED_ANALYSIS_LANGUAGES
+
+def detect_language_from_code(code_str):
+    if not code_str:
+        return None
+    text = code_str.strip()
+    if re.search(r'#include\s*<iostream>|std::|cout\s*<<|cin\s*>>|namespace\s+std|#include\s*<vector>', text, re.IGNORECASE):
+        return "cpp"
+    if re.search(r'#include\s*<stdio\.h>|#include\s*<stdlib\.h>|#include\s*<string\.h>|printf\s*\(|scanf\s*\(|int\s+main\s*\(', text, re.IGNORECASE):
+        return "c"
+    if re.search(r'public\s+class\s+|System\.out\.(println|print)|public\s+static\s+void\s+main', text):
+        return "java"
+    if re.search(r'def\s+[a-zA-Z0-9_]+\s*\(|import\s+[a-zA-Z0-9_]+|from\s+[a-zA-Z0-9_]+\s+import|if\s+__name__\s*==|elif\s+|print\s*\(', text):
+        return "python"
+    if re.search(r'console\.log\s*\(|function\s+[a-zA-Z0-9_]+\s*\(|const\s+[a-zA-Z0-9_]+\s*=|let\s+[a-zA-Z0-9_]+\s*=', text):
+        return "javascript"
+    return None
 
 @student_bp.route("/submit", methods=["GET", "POST"])
 @login_required
@@ -41,45 +58,72 @@ def submit():
 
         allowed_langs = [l.strip().lower() for l in asgn["allowed_languages"].split(",")]
 
+        submission_mode = request.form.get("submission_mode", "auto").strip()
         source_code = ""
-        source_filename = "pasted_code"
+        source_filename = "submission_code"
 
-        # Check if file was uploaded
-        if uploaded_file and uploaded_file.filename != "":
-            raw_filename = secure_filename(uploaded_file.filename)
-            ext = raw_filename.rsplit(".", 1)[-1].lower() if "." in raw_filename else ""
+        is_paste = (submission_mode == "paste") or (bool(code_input) and (not uploaded_file or uploaded_file.filename == ""))
 
-            if ext not in config.ALLOWED_EXTENSIONS:
-                flash(
-                    f"Unsupported file extension '.{ext}'. Supported extensions: {', '.join(config.ALLOWED_EXTENSIONS.keys())}. Unsupported languages (PHP, Ruby, Rust, Go, C#, Swift) cannot be analyzed.",
-                    "danger"
-                )
-                conn.close()
-                return redirect(url_for("student.submit"))
-
-            detected_lang = config.ALLOWED_EXTENSIONS[ext]
-            if not language or language == "auto":
-                language = detected_lang
-
-            source_filename = raw_filename
-            try:
-                source_code = uploaded_file.read().decode("utf-8", errors="replace")
-            except Exception as e:
-                flash(f"Error reading uploaded file: {str(e)}", "danger")
-                conn.close()
-                return redirect(url_for("student.submit"))
-        else:
-            # Code was pasted in textarea
+        if is_paste:
             if not code_input:
-                flash("Submission cannot be empty. Please upload a source code file or paste code into the editor.", "danger")
+                flash("Submission cannot be empty. Please paste your source code into the editor.", "danger")
                 conn.close()
                 return redirect(url_for("student.submit"))
+
             source_code = code_input
+
+            # Intelligent language auto-detection for pasted code
             if not language or language == "auto":
-                flash("Please select a programming language for pasted code.", "danger")
-                conn.close()
-                return redirect(url_for("student.submit"))
-            source_filename = f"submission.{language}"
+                detected = detect_language_from_code(code_input)
+                if detected:
+                    language = detected
+                elif allowed_langs and len(allowed_langs) == 1:
+                    language = allowed_langs[0]
+                elif allowed_langs:
+                    language = allowed_langs[0]
+                else:
+                    language = "python"
+
+            ext_map = {"python": "py", "c": "c", "cpp": "cpp", "java": "java", "javascript": "js"}
+            ext = ext_map.get(language, "txt")
+            source_filename = f"pasted_code.{ext}"
+        else:
+            if not uploaded_file or uploaded_file.filename == "":
+                # Fallback to code_input if provided
+                if code_input:
+                    source_code = code_input
+                    if not language or language == "auto":
+                        detected = detect_language_from_code(code_input)
+                        language = detected or (allowed_langs[0] if allowed_langs else "python")
+                    ext_map = {"python": "py", "c": "c", "cpp": "cpp", "java": "java", "javascript": "js"}
+                    source_filename = f"pasted_code.{ext_map.get(language, 'txt')}"
+                else:
+                    flash("Please upload a source code file or paste code into the editor.", "danger")
+                    conn.close()
+                    return redirect(url_for("student.submit"))
+            else:
+                raw_filename = secure_filename(uploaded_file.filename)
+                ext = raw_filename.rsplit(".", 1)[-1].lower() if "." in raw_filename else ""
+
+                if ext not in config.ALLOWED_EXTENSIONS:
+                    flash(
+                        f"Unsupported file extension '.{ext}'. Supported extensions: {', '.join(config.ALLOWED_EXTENSIONS.keys())}.",
+                        "danger"
+                    )
+                    conn.close()
+                    return redirect(url_for("student.submit"))
+
+                detected_lang = config.ALLOWED_EXTENSIONS[ext]
+                if not language or language == "auto":
+                    language = detected_lang
+
+                source_filename = raw_filename
+                try:
+                    source_code = uploaded_file.read().decode("utf-8", errors="replace")
+                except Exception as e:
+                    flash(f"Error reading uploaded file: {str(e)}", "danger")
+                    conn.close()
+                    return redirect(url_for("student.submit"))
 
         if not source_code.strip():
             flash("Submission cannot be empty. Please provide valid source code.", "danger")
@@ -150,7 +194,7 @@ def submit():
 
     # GET request: load active assignments
     assignments = conn.execute(
-        "SELECT id, title, subject, description, allowed_languages, deadline FROM assignments WHERE is_active = 1 ORDER BY created_at DESC"
+        "SELECT id, title, subject, description, allowed_languages, deadline FROM assignments WHERE is_active = 1 ORDER BY id ASC"
     ).fetchall()
     conn.close()
 
