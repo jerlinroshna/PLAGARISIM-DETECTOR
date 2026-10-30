@@ -1,131 +1,768 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Assignments{% endblock %}
+{% block title %}Manage Course Assignments{% endblock %}
 {% block page_title %}Manage Course Assignments{% endblock %}
+{% block breadcrumb_page %}Assignments{% endblock %}
 
 {% block content %}
-<div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
-  <!-- Left Column: Assignments Table -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">Existing Assignments</h2>
-      <span style="font-size: 0.85rem; color: var(--text-muted);">{{ assignments|length }} Total</span>
-    </div>
+<div class="assignments-management-container" id="assignmentsManagementApp">
 
-    <div class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Assignment & Subject</th>
-            <th>Allowed Languages</th>
-            <th>Deadline</th>
-            <th>Submissions</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if assignments %}
-            {% for a in assignments %}
-            <tr>
-              <td><strong>#{{ a.id }}</strong></td>
-              <td>
-                <div style="font-weight: 600; color: var(--primary);">{{ a.title }}</div>
-                <div style="font-size: 0.78rem; color: var(--text-muted);">{{ a.subject }}</div>
-                {% if a.description %}
-                  <div style="font-size: 0.75rem; color: #475569; margin-top: 4px;">{{ a.description }}</div>
-                {% endif %}
-              </td>
-              <td>
-                {% for lang in a.allowed_languages.split(',') %}
-                  <span class="badge badge-status" style="font-size: 0.7rem;">{{ lang|upper }}</span>
-                {% endfor %}
-              </td>
-              <td style="font-size: 0.82rem;">{{ a.deadline or 'No deadline' }}</td>
-              <td><strong>{{ a.submission_count }}</strong></td>
-              <td>
-                <span class="badge badge-status {% if a.is_active %}active{% endif %}">
-                  {{ 'Active' if a.is_active else 'Disabled' }}
-                </span>
-              </td>
-              <td>
-                <form action="{{ url_for('faculty.toggle_assignment', asgn_id=a.id) }}" method="POST" style="display: inline;">
-                  <button type="submit" class="btn btn-sm {% if a.is_active %}btn-outline{% else %}btn-primary{% endif %}">
-                    {{ 'Disable' if a.is_active else 'Enable' }}
-                  </button>
-                </form>
-              </td>
-            </tr>
-            {% endfor %}
-          {% else %}
-            <tr>
-              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
-                No assignments created yet. Use the form to create your first assignment.
-              </td>
-            </tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Right Column: Create New Assignment Form -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">+ Create Assignment</h2>
-    </div>
-
-    <form action="{{ url_for('faculty.assignments') }}" method="POST">
-      <div class="form-group">
-        <label class="form-label" for="title">Assignment Title *</label>
-        <input type="text" class="form-control" name="title" id="title" required 
-               placeholder="e.g. CS201: Sorting Algorithms">
+  <!-- Top Context Header Bar with Primary Action -->
+  <header class="assignments-header-bar">
+    <div class="assignments-header-info">
+      <div class="context-pill">
+        <span class="context-pill-dot" aria-hidden="true"></span>
+        <span>Active Semester AY 2026-27</span>
+        <span class="context-pill-sep">&bull;</span>
+        <span>Automated AST &amp; Winnowing Screening</span>
       </div>
+      <p class="assignments-header-subtitle">
+        Configure programming assignments, specify permitted language parsers, and set screening deadlines.
+      </p>
+    </div>
+    <div class="assignments-header-actions">
+      <button type="button" class="btn btn-primary btn-new-assignment" id="btnOpenNewAssignmentModal" aria-haspopup="dialog" aria-expanded="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>+ New Assignment</span>
+      </button>
+    </div>
+  </header>
 
-      <div class="form-group">
-        <label class="form-label" for="subject">Course Subject *</label>
-        <input type="text" class="form-control" name="subject" id="subject" required 
-               placeholder="e.g. Data Structures & Algorithms">
-      </div>
+  <!-- Main Two-Column Layout -->
+  <div class="assignments-layout-grid">
 
-      <div class="form-group">
-        <label class="form-label" for="description">Description / Problem Statement</label>
-        <textarea class="form-control" name="description" id="description" rows="3" 
-                  placeholder="Briefly describe the requirements..."></textarea>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Permitted Programming Languages *</label>
-        <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background-color: var(--bg-alt); border-radius: 6px; border: 1px solid var(--border-light);">
-          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" name="allowed_languages" value="python" checked> Python (.py)
-          </label>
-          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" name="allowed_languages" value="c" checked> C (.c)
-          </label>
-          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" name="allowed_languages" value="cpp" checked> C++ (.cpp)
-          </label>
-          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" name="allowed_languages" value="java" checked> Java (.java)
-          </label>
-          <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" name="allowed_languages" value="javascript" checked> JavaScript (.js)
-          </label>
+    <!-- Left Column: Existing Assignments Workspace -->
+    <section class="card assignments-table-card" aria-labelledby="tableCardHeading">
+      
+      <!-- Table Card Header -->
+      <div class="card-header assignments-table-header">
+        <div class="table-title-group">
+          <h2 class="card-title" id="tableCardHeading">Existing Course Assignments</h2>
+          <span class="assignments-count-chip" id="asgnCountDisplay" aria-live="polite">
+            Showing <strong id="asgnShowingCount">{{ assignments|length }}</strong> of <strong id="asgnTotalCount">{{ assignments|length }}</strong>
+          </span>
+        </div>
+        <div class="table-header-tools">
+          <button type="button" class="btn btn-sm btn-ghost btn-refresh-table" id="btnRefreshTable" title="Reload assignments table" aria-label="Reload assignments table">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            <span class="sr-only">Refresh</span>
+          </button>
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label" for="deadline">Submission Deadline</label>
-        <input type="text" class="form-control" name="deadline" id="deadline" 
-               placeholder="YYYY-MM-DD HH:MM">
+      <!-- Advanced Filter & Search Toolbar -->
+      <div class="assignments-toolbar" role="region" aria-label="Table filter controls">
+        <!-- Search Box -->
+        <div class="toolbar-search-box">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+          <input type="text" class="form-control form-control-sm toolbar-input" id="asgnSearchInput" 
+                 placeholder="Search by title, subject, or ID…" 
+                 aria-label="Search assignments by title, subject, or ID">
+          <button type="button" class="search-clear-btn" id="asgnSearchClearBtn" aria-label="Clear search" style="display: none;">
+            &times;
+          </button>
+        </div>
+
+        <div class="toolbar-filters-group">
+          <!-- Status Filter -->
+          <div class="toolbar-select-wrapper">
+            <label for="asgnStatusFilter" class="sr-only">Filter by Status</label>
+            <select class="form-control form-control-sm toolbar-select" id="asgnStatusFilter" aria-label="Filter assignments by status">
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="disabled">Disabled Only</option>
+              <option value="past">Past Deadline</option>
+            </select>
+          </div>
+
+          <!-- Language Filter -->
+          <div class="toolbar-select-wrapper">
+            <label for="asgnLangFilter" class="sr-only">Filter by Language</label>
+            <select class="form-control form-control-sm toolbar-select" id="asgnLangFilter" aria-label="Filter assignments by language">
+              <option value="all">All Languages</option>
+              <option value="python">Python (.py)</option>
+              <option value="c">C (.c)</option>
+              <option value="cpp">C++ (.cpp)</option>
+              <option value="java">Java (.java)</option>
+              <option value="javascript">JavaScript (.js)</option>
+            </select>
+          </div>
+
+          <!-- Sort Dropdown -->
+          <div class="toolbar-select-wrapper">
+            <label for="asgnSortSelect" class="sr-only">Sort Table Rows</label>
+            <select class="form-control form-control-sm toolbar-select" id="asgnSortSelect" aria-label="Sort assignments table">
+              <option value="deadline_asc">Deadline: Soonest first</option>
+              <option value="deadline_desc">Deadline: Latest first</option>
+              <option value="submissions_desc">Submissions: High to Low</option>
+              <option value="newest">Newest Created</option>
+              <option value="title_asc">Title: A &ndash; Z</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
-        Create Assignment
-      </button>
-    </form>
+      <!-- Table Skeleton Loader (Toggled during filtering/async) -->
+      <div class="table-skeleton-container" id="asgnSkeletonLoader" style="display: none;" aria-hidden="true">
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+      </div>
+
+      <!-- Main Responsive Data Table -->
+      <div class="table-responsive assignments-table-wrapper" id="asgnTableScrollWrapper">
+        <table class="data-table assignments-table" id="assignmentsDataTable">
+          <thead>
+            <tr>
+              <th scope="col" class="th-id">ID</th>
+              <th scope="col" class="th-assignment">Assignment &amp; Course Subject</th>
+              <th scope="col" class="th-languages">Permitted Languages</th>
+              <th scope="col" class="th-deadline sortable-th" id="thSortDeadline" tabindex="0" role="button" aria-label="Sort by Deadline">
+                <span>Deadline</span>
+                <span class="sort-indicator" aria-hidden="true">&varr;</span>
+              </th>
+              <th scope="col" class="th-submissions sortable-th" id="thSortSubmissions" tabindex="0" role="button" aria-label="Sort by Submissions count">
+                <span>Submissions</span>
+                <span class="sort-indicator" aria-hidden="true">&varr;</span>
+              </th>
+              <th scope="col" class="th-status">Status</th>
+              <th scope="col" class="th-actions" style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="asgnTableBody">
+            {% if assignments %}
+              {% for a in assignments %}
+              <tr class="assignment-row {% if not a.is_active %}row-disabled{% endif %}" 
+                  id="asgn-row-{{ a.id }}"
+                  data-id="{{ a.id }}"
+                  data-title="{{ a.title|e }}"
+                  data-subject="{{ a.subject|e }}"
+                  data-description="{{ a.description|e or '' }}"
+                  data-languages="{{ a.allowed_languages|lower }}"
+                  data-deadline="{{ a.deadline or '' }}"
+                  data-submissions="{{ a.submission_count or 0 }}"
+                  data-active="{{ 1 if a.is_active else 0 }}"
+                  data-created="{{ a.created_at or '' }}">
+                
+                <!-- ID Column -->
+                <td class="td-id">
+                  <span class="id-tag">#{{ a.id }}</span>
+                </td>
+
+                <!-- Title & Subject & Truncated Description -->
+                <td class="td-assignment">
+                  <div class="assignment-title-row">
+                    <span class="assignment-main-title" title="{{ a.title }}">{{ a.title }}</span>
+                  </div>
+                  <div class="assignment-subject-sub">
+                    <span class="subject-badge-bullet" aria-hidden="true">&bull;</span>
+                    <span>{{ a.subject }}</span>
+                  </div>
+                  {% if a.description %}
+                    <div class="assignment-desc-wrapper">
+                      <p class="assignment-desc-truncated" 
+                         id="desc-text-{{ a.id }}" 
+                         title="Click to expand/collapse full description" 
+                         tabindex="0" 
+                         role="button"
+                         aria-expanded="false">
+                        {{ a.description }}
+                      </p>
+                      <button type="button" class="desc-expand-pill" data-target="desc-text-{{ a.id }}" aria-label="Expand description text">
+                        Expand
+                      </button>
+                    </div>
+                  {% endif %}
+                </td>
+
+                <!-- Permitted Languages with Max 3 chips + N Popover -->
+                <td class="td-languages">
+                  <div class="lang-chips-container" id="lang-chips-{{ a.id }}">
+                    {% set langs_list = a.allowed_languages.split(',') %}
+                    {% for lang in langs_list[:3] %}
+                      {% set l_clean = lang.strip().lower() %}
+                      <span class="lang-chip chip-{{ l_clean }}" title="Permitted: {{ l_clean|upper }}">
+                        <span class="lang-dot dot-{{ l_clean }}" aria-hidden="true"></span>
+                        <span class="lang-text">{{ l_clean|upper }}</span>
+                      </span>
+                    {% endfor %}
+                    {% if langs_list|length > 3 %}
+                      {% set remaining_langs = langs_list[3:] %}
+                      <span class="lang-chip-more" 
+                            tabindex="0" 
+                            role="button" 
+                            data-popover-langs="{{ remaining_langs|join(', ')|upper }}" 
+                            title="{{ remaining_langs|join(', ')|upper }}"
+                            aria-label="{{ remaining_langs|length }} additional languages: {{ remaining_langs|join(', ')|upper }}">
+                        +{{ langs_list|length - 3 }}
+                      </span>
+                    {% endif %}
+                  </div>
+                </td>
+
+                <!-- Formatted Deadline with Relative Time Hint -->
+                <td class="td-deadline" data-raw-deadline="{{ a.deadline or '' }}">
+                  <div class="deadline-primary-cell">
+                    {% if a.deadline %}
+                      <span class="deadline-formatted" data-timestamp="{{ a.deadline }}">{{ a.deadline }}</span>
+                      <span class="deadline-relative-hint" data-timestamp="{{ a.deadline }}">Calculating...</span>
+                    {% else %}
+                      <span class="deadline-none">No deadline configured</span>
+                    {% endif %}
+                  </div>
+                </td>
+
+                <!-- Submissions Count with Clickable Filter Link & Mini Progress Bar -->
+                <td class="td-submissions">
+                  <a href="{{ url_for('faculty.submissions') }}?assignment={{ a.id }}" 
+                     class="submissions-link-badge" 
+                     title="View all submissions for {{ a.title }}">
+                    <span class="submissions-count-number">{{ a.submission_count }}</span>
+                    <span class="submissions-label">submitted</span>
+                  </a>
+                  <!-- Visual Progress Meter against enrolled student cohort (Default demo: 60 students) -->
+                  <!-- // TODO: connect API for enrolled student count per cohort -->
+                  <div class="submissions-progress-box" title="{{ a.submission_count }} submitted out of 60 enrolled students">
+                    <div class="submissions-progress-track">
+                      {% set pct = (a.submission_count / 60 * 100)|round|int %}
+                      <div class="submissions-progress-fill" style="width: {{ pct if pct <= 100 else 100 }}%;"></div>
+                    </div>
+                    <span class="submissions-ratio-text">{{ a.submission_count }}/60</span>
+                  </div>
+                </td>
+
+                <!-- Status Pill with Accessible Dot -->
+                <td class="td-status">
+                  {% if a.is_active %}
+                    <span class="status-indicator-pill status-active" id="status-pill-{{ a.id }}">
+                      <span class="status-pulse-dot" aria-hidden="true"></span>
+                      <span>Active</span>
+                    </span>
+                  {% else %}
+                    <span class="status-indicator-pill status-disabled" id="status-pill-{{ a.id }}">
+                      <span class="status-static-dot" aria-hidden="true"></span>
+                      <span>Disabled</span>
+                    </span>
+                  {% endif %}
+                </td>
+
+                <!-- Action Button Group with Overflow ⋯ Menu -->
+                <td class="td-actions">
+                  <div class="actions-button-group">
+                    <!-- Quick View Submissions Button -->
+                    <a href="{{ url_for('faculty.submissions') }}?assignment={{ a.id }}" 
+                       class="btn btn-xs btn-outline-primary btn-action-view" 
+                       title="View submissions for {{ a.title }}"
+                       aria-label="View submissions for assignment #{{ a.id }}">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <span>View</span>
+                    </a>
+
+                    <!-- Edit Quick Button -->
+                    <button type="button" 
+                            class="btn btn-xs btn-ghost btn-action-edit" 
+                            data-asgn-id="{{ a.id }}"
+                            title="Edit assignment configuration"
+                            aria-label="Edit assignment #{{ a.id }}">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+
+                    <!-- Overflow Menu ⋯ -->
+                    <div class="overflow-menu-container">
+                      <button type="button" 
+                              class="btn btn-xs btn-ghost btn-overflow-trigger" 
+                              id="btnOverflow-{{ a.id }}" 
+                              aria-haspopup="menu" 
+                              aria-expanded="false" 
+                              aria-label="More actions for assignment #{{ a.id }}">
+                        &ctdot;
+                      </button>
+                      <div class="overflow-dropdown-menu" id="menu-{{ a.id }}" role="menu" aria-labelledby="btnOverflow-{{ a.id }}">
+                        
+                        <!-- Toggle Disable/Enable -->
+                        <button type="button" 
+                                role="menuitem"
+                                class="overflow-menu-item item-toggle-status"
+                                data-action="toggle"
+                                data-asgn-id="{{ a.id }}"
+                                data-asgn-title="{{ a.title|e }}"
+                                data-is-active="{{ 1 if a.is_active else 0 }}"
+                                data-toggle-url="{{ url_for('faculty.toggle_assignment', asgn_id=a.id) }}">
+                          <span class="overflow-item-icon">
+                            {% if a.is_active %}
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                            {% else %}
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            {% endif %}
+                          </span>
+                          <span class="overflow-item-label">{{ 'Disable Assignment' if a.is_active else 'Enable Assignment' }}</span>
+                        </button>
+
+                        <!-- Duplicate Assignment -->
+                        <button type="button" 
+                                role="menuitem"
+                                class="overflow-menu-item item-duplicate-asgn"
+                                data-action="duplicate"
+                                data-asgn-id="{{ a.id }}"
+                                data-asgn-title="{{ a.title|e }}"
+                                data-asgn-subject="{{ a.subject|e }}"
+                                data-asgn-desc="{{ a.description|e or '' }}"
+                                data-asgn-langs="{{ a.allowed_languages }}"
+                                data-asgn-deadline="{{ a.deadline or '' }}">
+                          <span class="overflow-item-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                          </span>
+                          <span class="overflow-item-label">Duplicate Template</span>
+                        </button>
+
+                        <div class="overflow-menu-divider" role="separator"></div>
+
+                        <!-- Delete Assignment (Safe simulated / prompt) -->
+                        <button type="button" 
+                                role="menuitem"
+                                class="overflow-menu-item item-delete-asgn"
+                                data-action="delete"
+                                data-asgn-id="{{ a.id }}"
+                                data-asgn-title="{{ a.title|e }}">
+                          <span class="overflow-item-icon danger-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </span>
+                          <span class="overflow-item-label danger-text">Delete Assignment</span>
+                        </button>
+
+                      </div>
+                    </div>
+
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State Container (Displayed if no assignments or search has 0 matches) -->
+      <div class="assignments-empty-state" id="asgnEmptyState" style="{% if assignments %}display: none;{% endif %}">
+        <div class="empty-state-illustration" aria-hidden="true">
+          <svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+            <path d="M7 8h10"></path>
+            <path d="M7 12h6"></path>
+          </svg>
+        </div>
+        <h3 class="empty-state-title" id="emptyStateTitle">No Assignments Found</h3>
+        <p class="empty-state-text" id="emptyStateDesc">
+          {% if assignments %}
+            No course assignments match your active search and filter criteria.
+          {% else %}
+            You have not created any programming assignments yet. Get started by drafting your first assignment in the form.
+          {% endif %}
+        </p>
+        <div class="empty-state-actions">
+          <button type="button" class="btn btn-sm btn-secondary" id="btnResetFilters" style="display: none;">
+            Clear All Filters
+          </button>
+          <button type="button" class="btn btn-sm btn-primary" id="btnEmptyCreateAssignment">
+            + Create First Assignment
+          </button>
+        </div>
+      </div>
+
+      <!-- Error State with Retry Button -->
+      <div class="assignments-error-state" id="asgnErrorState" style="display: none;" role="alert">
+        <div class="error-state-icon" aria-hidden="true">&excl;</div>
+        <div class="error-state-content">
+          <h4>Unable to update assignments view</h4>
+          <p>An unexpected network or script issue occurred. Please click below to refresh.</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger" id="btnRetryTable">Retry View</button>
+      </div>
+
+      <!-- Pagination Footer Container -->
+      <div class="assignments-pagination-bar" id="asgnPaginationBar" style="display: none;">
+        <div class="pagination-info">
+          Showing <span id="pagStart">1</span> &ndash; <span id="pagEnd">10</span> of <span id="pagTotal">0</span> entries
+        </div>
+        <div class="pagination-controls" role="navigation" aria-label="Assignments table pagination">
+          <button type="button" class="btn btn-xs btn-secondary" id="btnPagPrev" aria-label="Previous page">
+            &lsaquo; Prev
+          </button>
+          <div class="pagination-page-numbers" id="pagPageNumbers"></div>
+          <button type="button" class="btn btn-xs btn-secondary" id="btnPagNext" aria-label="Next page">
+            Next &rsaquo;
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- Right Column: Sticky / Drawer "Create Assignment" Panel -->
+    <aside class="assignments-form-panel" id="asgnFormPanel" aria-labelledby="formCardHeading">
+      
+      <!-- Drawer Backdrop for mobile/tablet ( <= 1100px ) -->
+      <div class="asgn-drawer-backdrop" id="asgnDrawerBackdrop" aria-hidden="true"></div>
+
+      <div class="card asgn-form-card" id="asgnFormCard">
+        
+        <!-- Form Header -->
+        <div class="card-header asgn-form-header">
+          <div class="form-header-text">
+            <h2 class="card-title" id="formCardHeading">
+              <span id="formModeTitle">+ Create Assignment</span>
+            </h2>
+            <span class="form-header-badge" id="formHeaderBadge">Published by default</span>
+          </div>
+          <!-- Close button for drawer modal on mobile -->
+          <button type="button" class="btn-drawer-close" id="btnDrawerClose" aria-label="Close assignment drawer">
+            &times;
+          </button>
+        </div>
+
+        <!-- Create Assignment Form -->
+        <form action="{{ url_for('faculty.assignments') }}" method="POST" id="createAssignmentForm" novalidate autocomplete="off">
+          
+          <div class="form-scrollable-body" id="formScrollBody">
+
+            <!-- Hidden field for edit mode ID tracking -->
+            <input type="hidden" name="assignment_id" id="editAssignmentId" value="">
+
+            <!-- SECTION 1: BASICS -->
+            <fieldset class="form-fieldset">
+              <legend class="fieldset-legend">
+                <span class="legend-number">1</span>
+                <span>Basics</span>
+              </legend>
+
+              <!-- Assignment Title -->
+              <div class="form-group">
+                <div class="label-with-counter">
+                  <label class="form-label" for="asgnTitle">Assignment Title <span class="required-asterisk">*</span></label>
+                  <span class="char-counter" id="titleCharCounter">0 / 100</span>
+                </div>
+                <input type="text" class="form-control" name="title" id="asgnTitle" 
+                       placeholder="e.g. CS201: Sorting Algorithms" 
+                       maxlength="100" 
+                       required 
+                       aria-describedby="titleHelp titleError">
+                <div class="form-help-text" id="titleHelp">Include course code and specific problem title for easy identification.</div>
+                <div class="form-error-msg" id="titleError" role="alert" style="display: none;"></div>
+              </div>
+
+              <!-- Course Subject -->
+              <div class="form-group">
+                <div class="label-with-counter">
+                  <label class="form-label" for="asgnSubject">Course Subject <span class="required-asterisk">*</span></label>
+                  <span class="char-counter" id="subjectCharCounter">0 / 80</span>
+                </div>
+                <input type="text" class="form-control" name="subject" id="asgnSubject" 
+                       placeholder="e.g. Data Structures &amp; Algorithms" 
+                       maxlength="80" 
+                       required 
+                       aria-describedby="subjectHelp subjectError">
+                <div class="form-help-text" id="subjectHelp">Department subject category used to benchmark historical comparison.</div>
+                <div class="form-error-msg" id="subjectError" role="alert" style="display: none;"></div>
+              </div>
+            </fieldset>
+
+
+            <!-- SECTION 2: DETAILS -->
+            <fieldset class="form-fieldset">
+              <legend class="fieldset-legend">
+                <span class="legend-number">2</span>
+                <span>Details &amp; Requirements</span>
+              </legend>
+
+              <div class="form-group">
+                <div class="label-with-tabs">
+                  <div class="label-with-counter">
+                    <label class="form-label" for="asgnDescription">Problem Statement / Description</label>
+                    <span class="char-counter" id="descCharCounter">0 / 1000</span>
+                  </div>
+                  <!-- Markdown Edit / Preview Toggle Tabs -->
+                  <div class="markdown-preview-tabs" role="tablist" aria-label="Description editor tabs">
+                    <button type="button" class="tab-btn active" id="tabDescWrite" role="tab" aria-selected="true" aria-controls="asgnDescription">Write</button>
+                    <button type="button" class="tab-btn" id="tabDescPreview" role="tab" aria-selected="false" aria-controls="descMarkdownPreview">Preview</button>
+                  </div>
+                </div>
+
+                <!-- Textarea Editor -->
+                <textarea class="form-control auto-growing-textarea" name="description" id="asgnDescription" rows="3" 
+                          placeholder="Briefly describe problem requirements, constraints, or input/output specs..." 
+                          maxlength="1000"
+                          aria-describedby="descHelp descError"></textarea>
+
+                <!-- Markdown Live Preview Pane -->
+                <div class="markdown-preview-pane" id="descMarkdownPreview" style="display: none;" role="tabpanel" aria-labelledby="tabDescPreview">
+                  <em style="color: var(--text-muted); font-size: 0.82rem;">Nothing to preview yet.</em>
+                </div>
+
+                <div class="form-help-text" id="descHelp">Supports basic text formatting, bullet lists, and code backticks.</div>
+                <div class="form-error-msg" id="descError" role="alert" style="display: none;"></div>
+              </div>
+            </fieldset>
+
+
+            <!-- SECTION 3: RULES -->
+            <fieldset class="form-fieldset">
+              <legend class="fieldset-legend">
+                <span class="legend-number">3</span>
+                <span>Screening Rules</span>
+              </legend>
+
+              <!-- Selectable Language Chips Grid -->
+              <div class="form-group">
+                <div class="languages-label-row">
+                  <label class="form-label" id="langSelectorLabel">
+                    Permitted Programming Languages <span class="required-asterisk">*</span>
+                  </label>
+                  <div class="lang-selection-shortcuts">
+                    <button type="button" class="btn-link-shortcut" id="btnSelectAllLangs">Select all</button>
+                    <span class="shortcut-sep">&bull;</span>
+                    <button type="button" class="btn-link-shortcut" id="btnClearLangs">Clear</button>
+                  </div>
+                </div>
+
+                <div class="language-selection-grid" role="group" aria-labelledby="langSelectorLabel" id="langSelectionGroup">
+                  
+                  <!-- Python -->
+                  <label class="lang-toggle-box" for="lang-check-python">
+                    <input type="checkbox" name="allowed_languages" value="python" id="lang-check-python" class="lang-hidden-input">
+                    <div class="lang-box-content">
+                      <span class="lang-color-pill dot-python" aria-hidden="true"></span>
+                      <span class="lang-box-name">Python</span>
+                      <span class="lang-box-ext">.py</span>
+                    </div>
+                  </label>
+
+                  <!-- C -->
+                  <label class="lang-toggle-box" for="lang-check-c">
+                    <input type="checkbox" name="allowed_languages" value="c" id="lang-check-c" class="lang-hidden-input">
+                    <div class="lang-box-content">
+                      <span class="lang-color-pill dot-c" aria-hidden="true"></span>
+                      <span class="lang-box-name">C</span>
+                      <span class="lang-box-ext">.c</span>
+                    </div>
+                  </label>
+
+                  <!-- C++ -->
+                  <label class="lang-toggle-box" for="lang-check-cpp">
+                    <input type="checkbox" name="allowed_languages" value="cpp" id="lang-check-cpp" class="lang-hidden-input">
+                    <div class="lang-box-content">
+                      <span class="lang-color-pill dot-cpp" aria-hidden="true"></span>
+                      <span class="lang-box-name">C++</span>
+                      <span class="lang-box-ext">.cpp</span>
+                    </div>
+                  </label>
+
+                  <!-- Java -->
+                  <label class="lang-toggle-box" for="lang-check-java">
+                    <input type="checkbox" name="allowed_languages" value="java" id="lang-check-java" class="lang-hidden-input">
+                    <div class="lang-box-content">
+                      <span class="lang-color-pill dot-java" aria-hidden="true"></span>
+                      <span class="lang-box-name">Java</span>
+                      <span class="lang-box-ext">.java</span>
+                    </div>
+                  </label>
+
+                  <!-- JavaScript -->
+                  <label class="lang-toggle-box" for="lang-check-javascript">
+                    <input type="checkbox" name="allowed_languages" value="javascript" id="lang-check-javascript" class="lang-hidden-input">
+                    <div class="lang-box-content">
+                      <span class="lang-color-pill dot-javascript" aria-hidden="true"></span>
+                      <span class="lang-box-name">JavaScript</span>
+                      <span class="lang-box-ext">.js</span>
+                    </div>
+                  </label>
+
+                </div>
+                <div class="form-error-msg" id="langError" role="alert" style="display: none;"></div>
+              </div>
+
+              <!-- Deadline Date & Time Picker with Presets -->
+              <div class="form-group">
+                <label class="form-label" for="asgnDeadline">Submission Deadline</label>
+                
+                <!-- Date-Time Native Input -->
+                <div class="deadline-input-container">
+                  <input type="datetime-local" class="form-control" name="deadline" id="asgnDeadline" 
+                         aria-describedby="deadlineHelp deadlineTzHint">
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="deadline-presets-bar">
+                  <span class="presets-label">Quick Presets:</span>
+                  <button type="button" class="preset-chip-btn" data-days="7">+1 Week</button>
+                  <button type="button" class="preset-chip-btn" data-days="14">+2 Weeks</button>
+                  <button type="button" class="preset-chip-btn" data-preset="eom">End of Month</button>
+                </div>
+
+                <div class="deadline-meta-row" id="deadlineTzHint">
+                  <span class="timezone-badge" id="clientTimezoneBadge">Timezone: Detecting...</span>
+                  <span class="default-time-hint">&bull; Default cutoff: 23:59:00</span>
+                </div>
+                <div class="form-error-msg" id="deadlineError" role="alert" style="display: none;"></div>
+              </div>
+            </fieldset>
+
+
+            <!-- SECTION 4: COLLAPSIBLE ADVANCED SETTINGS -->
+            <div class="collapsible-advanced-container">
+              <button type="button" class="advanced-toggle-btn" id="btnToggleAdvanced" aria-expanded="false" aria-controls="advancedSettingsBody">
+                <span class="advanced-toggle-left">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  </svg>
+                  <span>Advanced Configuration</span>
+                </span>
+                <span class="advanced-chevron-icon" id="advancedChevron" aria-hidden="true">&rsaquo;</span>
+              </button>
+
+              <div class="advanced-settings-body" id="advancedSettingsBody" style="display: none;">
+                
+                <!-- Allow Late Submissions Toggle -->
+                <!-- // TODO: connect API for late submission policy flag -->
+                <div class="advanced-option-row">
+                  <div class="option-text-group">
+                    <label class="option-label" for="toggleLateSubmissions">Allow Late Submissions</label>
+                    <span class="option-desc">Flag submissions after cutoff as late without rejecting upload</span>
+                  </div>
+                  <label class="switch-toggle" for="toggleLateSubmissions">
+                    <input type="checkbox" id="toggleLateSubmissions" name="allow_late_submissions">
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
+
+                <!-- Maximum Attempts -->
+                <!-- // TODO: connect API for max attempt limit -->
+                <div class="form-group" style="margin-top: 14px;">
+                  <label class="form-label" for="maxAttemptsInput">Maximum Student Submission Attempts</label>
+                  <input type="number" class="form-control form-control-sm" id="maxAttemptsInput" name="max_attempts" placeholder="Unlimited (default: unlimited)" min="1" max="20">
+                  <div class="form-help-text">Leave blank to allow students to resubmit code freely until deadline.</div>
+                </div>
+
+                <!-- Plagiarism Threshold Override -->
+                <!-- // TODO: connect API for per-assignment threshold override -->
+                <div class="form-group">
+                  <div class="label-with-counter">
+                    <label class="form-label" for="similarityThresholdInput">Plagiarism Flag Threshold Override</label>
+                    <span class="threshold-val-badge" id="thresholdDisplay">70% (Default)</span>
+                  </div>
+                  <input type="range" class="form-range-slider" id="similarityThresholdInput" name="threshold_override" min="30" max="95" step="5" value="70">
+                  <div class="form-help-text">Submissions exceeding this combined score are flagged for mandatory review.</div>
+                </div>
+
+                <!-- Visibility Status (Published vs Draft) -->
+                <!-- // TODO: connect API for assignment publication visibility -->
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Initial Visibility</label>
+                  <div class="segmented-radio-group">
+                    <label class="segmented-radio-item">
+                      <input type="radio" name="visibility" value="published" checked>
+                      <span>Published (Students can see)</span>
+                    </label>
+                    <label class="segmented-radio-item">
+                      <input type="radio" name="visibility" value="draft">
+                      <span>Draft (Faculty only)</span>
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Sticky Form Action Footer -->
+          <div class="asgn-form-footer" id="asgnFormFooter">
+            <div class="footer-actions-left">
+              <button type="reset" class="btn btn-sm btn-ghost" id="btnResetForm">Reset</button>
+            </div>
+            <div class="footer-actions-right">
+              <!-- // TODO: connect API for draft save action -->
+              <button type="button" class="btn btn-sm btn-secondary" id="btnSaveDraft">
+                Save as Draft
+              </button>
+              <button type="submit" class="btn btn-sm btn-primary" id="btnSubmitAssignment">
+                <span class="btn-spinner" id="btnSubmitSpinner" style="display: none;" aria-hidden="true"></span>
+                <span id="btnSubmitLabel">Create Assignment</span>
+              </button>
+            </div>
+          </div>
+
+        </form>
+
+      </div>
+    </aside>
+
   </div>
+
+  <!-- Accessible Confirmation Dialog Modal (Disable / Delete Actions) -->
+  <dialog class="accessible-modal-dialog" id="asgnConfirmModal" aria-labelledby="modalDialogTitle" aria-describedby="modalDialogDesc">
+    <div class="modal-dialog-box">
+      <div class="modal-dialog-header">
+        <div class="modal-icon-badge" id="modalIconBadge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="modal-dialog-title" id="modalDialogTitle">Confirm Action</h3>
+          <div class="modal-target-asgn" id="modalTargetAsgn">CS201: Sorting Algorithms</div>
+        </div>
+      </div>
+      
+      <div class="modal-dialog-body">
+        <p class="modal-dialog-desc" id="modalDialogDesc">
+          Are you sure you want to proceed with this assignment status change?
+        </p>
+        <div class="modal-consequence-alert" id="modalConsequenceAlert">
+          <strong>Consequence:</strong> <span id="modalConsequenceText">Students will no longer be able to submit solutions to this assignment.</span>
+        </div>
+      </div>
+
+      <div class="modal-dialog-footer">
+        <button type="button" class="btn btn-sm btn-secondary" id="btnModalCancel">Cancel</button>
+        <form method="POST" id="modalConfirmForm" style="display: inline;">
+          <button type="submit" class="btn btn-sm btn-danger" id="btnModalConfirm">Confirm Action</button>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Interactive Toast Notification Container -->
+  <div class="asgn-toast-container" id="asgnToastContainer" aria-live="assertive" aria-atomic="true">
+    <div class="asgn-toast" id="asgnToast" style="display: none;">
+      <div class="asgn-toast-icon" id="toastIcon">&#10003;</div>
+      <div class="asgn-toast-content">
+        <div class="asgn-toast-title" id="toastTitle">Success</div>
+        <div class="asgn-toast-message" id="toastMessage">Assignment updated successfully.</div>
+      </div>
+      <button type="button" class="asgn-toast-undo-btn" id="toastUndoBtn" style="display: none;">Undo</button>
+      <button type="button" class="asgn-toast-close" id="toastCloseBtn" aria-label="Close notification">&times;</button>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

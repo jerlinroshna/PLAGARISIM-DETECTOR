@@ -28,6 +28,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "sih-plagiarism-detector-secret-key-20
 XAI_API_KEY = os.environ.get("XAI_API_KEY", "")
 XAI_BASE_URL = os.environ.get("XAI_BASE_URL", "https://api.x.ai/v1")
 XAI_MODEL = os.environ.get("XAI_MODEL", "grok-2-latest")
+XAI_TEMPERATURE = float(os.environ.get("XAI_TEMPERATURE", 0.2))
 
 # Serverless / Vercel environment detection
 IS_VERCEL = bool(os.environ.get("VERCEL"))
