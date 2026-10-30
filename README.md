@@ -130,21 +130,32 @@ python -m unittest discover tests
 
 ---
 
-## 8. Git Workflow & Updates Policy
+## 8. Git Collaboration & Continuous Push Policy
 
-> **Important Policy**: Always push all code updates and commits to the remote GitHub repository immediately after making changes.
+> **Mandatory Policy**: **Always push all changes to Git immediately.**  
+> Whenever any file is added, edited, or fixed, commit and push your changes to GitHub right away. Always pull latest before starting (`git pull origin main`), and always push after every work session (`git push origin main`) to ensure all collaborators are in sync without merge conflicts.
 
-### Always Push Updates to Git:
+### Standard Git Sync Protocol:
 ```powershell
-# 1. Check current status
+# 1. Pull latest remote changes first
+git pull origin main
+
+# 2. Check current modified files
 git status
 
-# 2. Stage all updated files
+# 3. Stage all modified and new files
 git add .
 
-# 3. Commit with a descriptive message
+# 4. Commit with a clear, descriptive message
 git commit -m "feat/fix: describe your changes here"
 
-# 4. Push updates to remote repository
+# 5. Always push immediately to the remote branch
 git push origin main
 ```
+
+### Git Rules for All Team Members & Agents:
+1. **Never leave uncommitted work**: Commit and push at the end of each feature or bug fix.
+2. **Pull before starting**: Always fetch and pull `origin main` before starting new edits to prevent merge collisions.
+3. **Resolve conflicts cleanly**: If any conflict occurs, test thoroughly and commit the resolution before pushing.
+4. **Run test suite before push**: Ensure tests pass via `python -m unittest tests.test_auth tests.test_workflow tests.test_grok_integration`.
+

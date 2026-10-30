@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from datetime import datetime
 from typing import Dict, Any, Optional, Tuple
 import requests
 import config
@@ -308,3 +309,274 @@ class GrokService:
                 conn.close()
 
         return result
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # INVESTIGATION REPORT — long-form generation
+    # ─────────────────────────────────────────────────────────────────────────
+
+    @classmethod
+    def build_report_prompts(cls, report_data: Dict[str, Any]) -> Tuple[str, str]:
+        """Constructs the system and user prompts for a formal investigation report."""
+        system_prompt = (
+            "You are Grok, a senior academic integrity officer AI developed by xAI. "
+            "You are generating a formal, structured ACADEMIC INTEGRITY INVESTIGATION REPORT "
+            "for university faculty. This is an official document, not a chat message.\n\n"
+            "STRICT RULES:\n"
+            "1. Write in formal, professional language suitable for an official academic record.\n"
+            "2. ONLY reference the exact numerical scores and evidence provided. NEVER invent or recalculate any metric.\n"
+            "3. DO NOT make a final plagiarism determination or accusation. State that the final determination rests with the instructor.\n"
+            "4. Follow the EXACT 7-section structure specified in the user prompt. Use the exact heading names.\n"
+            "5. Each section must be substantive (3-6 sentences minimum). Section 4 must reference specific code block evidence.\n"
+            "6. Use markdown formatting (## headings, **bold**, bullet lists, code blocks).\n"
+            "7. Section 7 must include the mandatory disclaimer verbatim as instructed.\n"
+            "Generate a thorough, evidence-grounded document that faculty can use as a formal case file."
+        )
+
+        ev = report_data
+        hist_block = ""
+        if ev.get("has_historical_match"):
+            hist_block = (
+                f"MATCHED HISTORICAL ARCHIVE:\n"
+                f"  Academic Year      : {ev.get('historical_academic_year', 'N/A')}\n"
+                f"  Assignment         : {ev.get('historical_assignment', 'N/A')}\n"
+                f"  Historical File    : {ev.get('hist_filename', 'N/A')}\n"
+                f"  Historical Scope   : {ev.get('historical_total_lines', 0)} lines\n"
+                f"  Matched Lines      : ~{ev.get('matched_lines_count', 0)} lines across "
+                f"{ev.get('matched_blocks_count', 0)} block(s)\n"
+            )
+        else:
+            hist_block = "MATCHED HISTORICAL ARCHIVE:\n  No comparable historical record found in repository.\n"
+
+        # Build matched code evidence block
+        evidence_block = ""
+        sections = ev.get("matched_sections", [])
+        if sections:
+            evidence_block = "MATCHED CODE EVIDENCE BLOCKS:\n"
+            for i, sec in enumerate(sections, 1):
+                evidence_block += (
+                    f"  [Block {i}] Student {sec['student_lines']} vs Historical {sec['historical_lines']}:\n"
+                    f"    Student code snippet:\n"
+                )
+                for ln in sec["student_snippet"].splitlines():
+                    evidence_block += f"      {ln}\n"
+                if sec.get("historical_snippet"):
+                    evidence_block += f"    Historical archive snippet:\n"
+                    for ln in sec["historical_snippet"].splitlines():
+                        evidence_block += f"      {ln}\n"
+        else:
+            evidence_block = "MATCHED CODE EVIDENCE BLOCKS: None recorded (structural/token similarity only).\n"
+
+        # Prior Grok explanation as context
+        prior_grok = ""
+        if ev.get("grok_explanation"):
+            prior_grok = (
+                f"\nPRIOR GROK AI ANALYSIS (summary context, first 800 chars):\n"
+                f"{ev['grok_explanation'][:800]}\n"
+            )
+
+        # Faculty review context
+        review_block = (
+            f"FACULTY REVIEW STATUS      : {ev.get('review_status', 'Pending Review')}\n"
+            f"FACULTY REVIEW NOTES       : {ev.get('review_notes', 'None recorded')}\n"
+        )
+
+        user_prompt = (
+            f"Generate a formal Academic Integrity Investigation Report using EXACTLY this 7-section structure:\n\n"
+            f"## ACADEMIC INTEGRITY INVESTIGATION REPORT\n"
+            f"### Case Reference: SUB-{ev['submission_id']} | Generated: {ev['generated_at']}\n\n"
+            f"## Section 1 — Executive Summary\n"
+            f"## Section 2 — Submission Profile & Context\n"
+            f"## Section 3 — Algorithmic Detection Findings\n"
+            f"## Section 4 — Code Evidence Analysis\n"
+            f"## Section 5 — Comparative Structural Analysis\n"
+            f"## Section 6 — Recommended Faculty Actions\n"
+            f"## Section 7 — Formal Disclaimer\n\n"
+            f"---\n\n"
+            f"CASE DATA:\n\n"
+            f"CASE REFERENCE             : SUB-{ev['submission_id']}\n"
+            f"REPORT GENERATED           : {ev['generated_at']}\n"
+            f"REVIEWED BY                : {ev['faculty_name']} ({ev['faculty_username']})\n"
+            f"INSTITUTION SYSTEM         : CodeGuard Academic Portal\n\n"
+            f"SUBMISSION DETAILS:\n"
+            f"  Assignment               : {ev['assignment_title']}\n"
+            f"  Subject                  : {ev['subject']}\n"
+            f"  Programming Language     : {ev['language'].upper()}\n"
+            f"  Submitted                : {ev['submitted_at']}\n"
+            f"  Source File              : {ev['source_filename']}\n"
+            f"  Analysis Status          : {ev['analysis_status']}\n"
+            f"  Submission Scope         : {ev['student_total_lines']} lines\n\n"
+            f"PLAGIARISM DETECTION METRICS:\n"
+            f"  Text Similarity Score    : {ev['text_score']}%  (40% weight)\n"
+            f"  AST Structural Score     : {ev['ast_score']}%  (60% weight)\n"
+            f"  Combined Score           : {ev['combined_score']}%  [{ev['similarity_label']}]\n"
+            f"  Algorithm Summary        : {ev['analysis_summary']}\n\n"
+            f"{hist_block}\n"
+            f"{evidence_block}\n"
+            f"{review_block}"
+            f"{prior_grok}\n"
+            f"---\n\n"
+            f"Section 7 MUST end with this verbatim disclaimer:\n"
+            f"> This report is generated by CodeGuard's automated plagiarism detection system "
+            f"and interpreted by xAI Grok AI. It constitutes decision-support evidence only. "
+            f"Similarity scores are algorithmic indicators and do not constitute proof of academic "
+            f"misconduct. The final determination of academic integrity violation rests solely "
+            f"with the instructor and institutional academic integrity process. No student should "
+            f"be disciplined based on this report alone without independent review."
+        )
+
+        return system_prompt, user_prompt
+
+    @classmethod
+    def generate_investigation_report(
+        cls,
+        submission_id: int,
+        faculty_user: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Generates a formal long-form Academic Integrity Investigation Report using Grok.
+
+        Pulls all submission, analysis, matched evidence, faculty review, and prior
+        Grok explanation data, sends it to xAI Grok with a formal reporting prompt,
+        and returns the generated markdown report text.
+        """
+        conn = database.get_db_connection()
+        try:
+            sub = conn.execute("""
+                SELECT s.id, s.title, s.programming_language, s.source_filename,
+                       s.source_code, s.submitted_at, s.analysis_status,
+                       a.title AS assignment_title, a.subject
+                FROM student_submissions s
+                JOIN assignments a ON s.assignment_id = a.id
+                WHERE s.id = ?
+            """, (submission_id,)).fetchone()
+
+            if not sub:
+                return {"success": False, "error": f"Submission #{submission_id} not found."}
+
+            result = conn.execute("""
+                SELECT r.id, r.text_similarity_score, r.ast_similarity_score,
+                       r.combined_similarity_score, r.similarity_label, r.analysis_summary,
+                       r.grok_explanation,
+                       h.academic_year, h.assignment_name AS hist_assignment,
+                       h.source_filename AS hist_filename, h.source_code AS hist_source_code
+                FROM analysis_results r
+                LEFT JOIN historical_submissions h ON r.matched_historical_id = h.id
+                WHERE r.submission_id = ?
+            """, (submission_id,)).fetchone()
+
+            if not result:
+                return {
+                    "success": False,
+                    "error": f"No analysis results found for submission #{submission_id}. "
+                             "Run the plagiarism analysis first."
+                }
+
+            review = conn.execute("""
+                SELECT f.review_status, f.review_notes
+                FROM faculty_reviews f
+                JOIN analysis_results r ON f.analysis_result_id = r.id
+                WHERE r.submission_id = ?
+            """, (submission_id,)).fetchone()
+
+            evidence_rows = conn.execute("""
+                SELECT details FROM matched_evidence WHERE analysis_result_id = ?
+            """, (result["id"],)).fetchall()
+
+        finally:
+            conn.close()
+
+        # Build matched sections (reuse extract_evidence_for_grok logic)
+        evidence = cls.extract_evidence_for_grok(submission_id)
+        matched_sections = evidence["matched_sections"] if evidence else []
+
+        report_data = {
+            "submission_id": submission_id,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "faculty_name": faculty_user.get("full_name", "Faculty Member"),
+            "faculty_username": faculty_user.get("username", "N/A"),
+            "assignment_title": sub["assignment_title"],
+            "subject": sub["subject"],
+            "language": sub["programming_language"],
+            "submitted_at": sub["submitted_at"],
+            "source_filename": sub["source_filename"],
+            "analysis_status": sub["analysis_status"],
+            "student_total_lines": len(sub["source_code"].splitlines()),
+            "text_score": round(result["text_similarity_score"] or 0.0, 1),
+            "ast_score": round(result["ast_similarity_score"] or 0.0, 1),
+            "combined_score": round(result["combined_similarity_score"] or 0.0, 1),
+            "similarity_label": result["similarity_label"] or "Low Similarity",
+            "analysis_summary": result["analysis_summary"] or "",
+            "grok_explanation": result["grok_explanation"] or "",
+            "has_historical_match": bool(result["hist_filename"]),
+            "historical_academic_year": result["academic_year"],
+            "historical_assignment": result["hist_assignment"],
+            "hist_filename": result["hist_filename"],
+            "historical_total_lines": len((result["hist_source_code"] or "").splitlines()),
+            "matched_lines_count": evidence["matched_lines_count"] if evidence else 0,
+            "matched_blocks_count": evidence["matched_blocks_count"] if evidence else 0,
+            "matched_sections": matched_sections,
+            "review_status": review["review_status"] if review else "Pending Review",
+            "review_notes": review["review_notes"] if review else "None recorded",
+        }
+
+        system_prompt, user_prompt = cls.build_report_prompts(report_data)
+
+        # Use higher token limit for long-form report generation
+        api_key = cls.get_api_key()
+        if not api_key:
+            return {
+                "success": False,
+                "error": "xAI API key is missing. Set the XAI_API_KEY environment variable to enable Investigation Report generation."
+            }
+
+        base_url = (os.environ.get("XAI_BASE_URL") or config.XAI_BASE_URL).rstrip("/")
+        model = os.environ.get("XAI_MODEL") or config.XAI_MODEL or "grok-2-latest"
+        endpoint = f"{base_url}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.15,
+            "max_tokens": 3000
+        }
+
+        try:
+            response = requests.post(endpoint, json=payload, headers=headers, timeout=60)
+            if response.status_code == 200:
+                data = response.json()
+                choices = data.get("choices", [])
+                if choices and "message" in choices[0]:
+                    report_text = choices[0]["message"].get("content", "").strip()
+                    return {
+                        "success": True,
+                        "report": report_text,
+                        "model": model,
+                        "generated_at": report_data["generated_at"],
+                        "submission_id": submission_id,
+                        "faculty_name": report_data["faculty_name"],
+                        "combined_score": report_data["combined_score"],
+                        "similarity_label": report_data["similarity_label"],
+                    }
+                return {"success": False, "error": "Received an empty response from xAI Grok API."}
+            elif response.status_code == 401:
+                return {"success": False, "error": "xAI API authentication failed (401). Check your XAI_API_KEY."}
+            elif response.status_code == 429:
+                return {"success": False, "error": "xAI API rate limit exceeded (429). Try again shortly."}
+            else:
+                try:
+                    err_msg = response.json().get("error", {}).get("message") or response.text
+                except Exception:
+                    err_msg = response.text
+                return {"success": False, "error": f"xAI API error (HTTP {response.status_code}): {err_msg[:200]}"}
+        except requests.exceptions.Timeout:
+            return {"success": False, "error": "Connection to xAI Grok timed out (60s). Please try again."}
+        except requests.exceptions.ConnectionError:
+            return {"success": False, "error": "Failed to connect to xAI Grok API. Check your network connection."}
+        except Exception as e:
+            return {"success": False, "error": f"Unexpected error: {str(e)}"}
+

@@ -8603,4 +8603,57 @@ body.theme-dark .theme-toggle-btn .moon-icon {
     grid-template-columns: 1fr;
   }
 }
+/* ==========================================================================
+   Investigation Report Card & Grok Spinner
+   ========================================================================== */
 
+/* Grok / Report generation spinner animation */
+@keyframes grok-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Investigation report card hover lift */
+#investigation-report-card {
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+#investigation-report-card:hover {
+  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Report download buttons */
+#btn-report-html,
+#btn-report-txt {
+  transition: opacity 180ms ease, transform 120ms ease, box-shadow 180ms ease;
+}
+#btn-report-html:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+  transform: translateY(-1px);
+}
+#btn-report-txt:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+#btn-report-html:disabled,
+#btn-report-txt:disabled {
+  cursor: not-allowed;
+}
+
+/* Report idle info box */
+#report-idle {
+  transition: background-color 200ms ease;
+}
+
+/* Report loading pane */
+#report-loading {
+  min-height: 80px;
+}
+
+/* Report error pane */
+#report-error {
+  animation: report-fadeIn 200ms ease;
+}
+
+@keyframes report-fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
