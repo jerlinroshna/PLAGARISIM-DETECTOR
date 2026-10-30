@@ -1,126 +1,482 @@
 {% extends "base.html" %}
 
 {% block title %}Results - Review Submissions{% endblock %}
-{% block page_title %}Student Submissions & Plagiarism Results{% endblock %}
+{% block breadcrumb_page %}Workspace{% endblock %}
+{% block page_title %}Student Submissions &amp; Plagiarism Results{% endblock %}
+
+{% block head %}
+<!-- Tailwind CSS for modern utility layout -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            50: '#f0f7ff',
+            100: '#e0effe',
+            500: '#2563eb',
+            600: '#1d4ed8',
+            700: '#1e40af',
+            900: '#0f172a'
+          }
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}
 
 {% block content %}
-<div class="card">
-  <!-- Search & Filter Bar -->
-  <form method="GET" action="{{ url_for('faculty.submissions') }}" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; align-items: flex-end;">
-    <div style="flex: 2; min-width: 180px;">
-      <label class="form-label" style="font-size: 0.78rem;">Search Student</label>
-      <input type="text" class="form-control" name="search" value="{{ search_user }}" placeholder="Search username or name...">
-    </div>
+<div class="submissions-page-container max-w-7xl mx-auto space-y-6 pb-12">
 
-    <div style="flex: 2; min-width: 180px;">
-      <label class="form-label" style="font-size: 0.78rem;">Filter by Assignment</label>
-      <select class="form-control" name="assignment">
-        <option value="">All Assignments</option>
-        {% for a in assignments %}
-          <option value="{{ a.id }}" {% if filter_asgn == a.id|string %}selected{% endif %}>{{ a.title }}</option>
-        {% endfor %}
-      </select>
-    </div>
+  <!-- 1. Administrative Header & Metrics Summary Strip -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+    <!-- Metric 1: Total Submissions -->
+    <a href="{{ url_for('faculty.submissions') }}" 
+       class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all flex flex-col justify-between group">
+      <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <span>Total Screened</span>
+        <svg class="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div class="mt-2 flex items-baseline gap-2">
+        <span class="text-2xl font-bold text-slate-900">{{ counts.total if counts else submissions|length }}</span>
+        <span class="text-[11px] text-slate-500">records</span>
+      </div>
+    </a>
 
-    <div style="flex: 1; min-width: 130px;">
-      <label class="form-label" style="font-size: 0.78rem;">Language</label>
-      <select class="form-control" name="language">
-        <option value="">All Languages</option>
-        <option value="python" {% if filter_lang == 'python' %}selected{% endif %}>Python</option>
-        <option value="c" {% if filter_lang == 'c' %}selected{% endif %}>C</option>
-        <option value="cpp" {% if filter_lang == 'cpp' %}selected{% endif %}>C++</option>
-        <option value="java" {% if filter_lang == 'java' %}selected{% endif %}>Java</option>
-        <option value="javascript" {% if filter_lang == 'javascript' %}selected{% endif %}>JavaScript</option>
-      </select>
-    </div>
+    <!-- Metric 2: High Risk (>= 70%) -->
+    <a href="{{ url_for('faculty.submissions') }}?similarity=High+Similarity" 
+       class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm hover:border-red-300 hover:shadow-md transition-all flex flex-col justify-between group">
+      <div class="flex items-center justify-between text-red-600 text-xs font-medium">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+          High Risk (&ge;70%)
+        </span>
+        <svg class="w-4 h-4 text-red-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="mt-2 flex items-baseline gap-2">
+        <span class="text-2xl font-bold text-red-700">{{ counts.high if counts else 0 }}</span>
+        <span class="text-[11px] text-red-600/80">urgent</span>
+      </div>
+    </a>
 
-    <div style="flex: 1; min-width: 140px;">
-      <label class="form-label" style="font-size: 0.78rem;">Similarity Level</label>
-      <select class="form-control" name="similarity">
-        <option value="">All Levels</option>
-        <option value="High Similarity" {% if filter_label == 'High Similarity' %}selected{% endif %}>High (&ge; 70%)</option>
-        <option value="Medium Similarity" {% if filter_label == 'Medium Similarity' %}selected{% endif %}>Medium (30-69%)</option>
-        <option value="Low Similarity" {% if filter_label == 'Low Similarity' %}selected{% endif %}>Low (&lt; 30%)</option>
-      </select>
-    </div>
+    <!-- Metric 3: Medium Risk (30-69%) -->
+    <a href="{{ url_for('faculty.submissions') }}?similarity=Medium+Similarity" 
+       class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm hover:border-amber-300 hover:shadow-md transition-all flex flex-col justify-between group">
+      <div class="flex items-center justify-between text-amber-600 text-xs font-medium">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          Med Risk (30-69%)
+        </span>
+        <svg class="w-4 h-4 text-amber-400 group-hover:text-amber-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="mt-2 flex items-baseline gap-2">
+        <span class="text-2xl font-bold text-amber-700">{{ counts.medium if counts else 0 }}</span>
+        <span class="text-[11px] text-amber-600/80">overlap</span>
+      </div>
+    </a>
 
-    <div style="flex: 1; min-width: 150px;">
-      <label class="form-label" style="font-size: 0.78rem;">Review Status</label>
-      <select class="form-control" name="review">
-        <option value="">All Statuses</option>
-        <option value="Pending Review" {% if filter_review == 'Pending Review' %}selected{% endif %}>Pending Review</option>
-        <option value="Reviewed" {% if filter_review == 'Reviewed' %}selected{% endif %}>Reviewed</option>
-        <option value="Further Investigation Required" {% if filter_review == 'Further Investigation Required' %}selected{% endif %}>Investigation Req.</option>
-        <option value="No Concern Identified" {% if filter_review == 'No Concern Identified' %}selected{% endif %}>No Concern</option>
-      </select>
-    </div>
+    <!-- Metric 4: Low Risk (< 30%) -->
+    <a href="{{ url_for('faculty.submissions') }}?similarity=Low+Similarity" 
+       class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between group">
+      <div class="flex items-center justify-between text-emerald-600 text-xs font-medium">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          Low Risk (&lt;30%)
+        </span>
+        <svg class="w-4 h-4 text-emerald-400 group-hover:text-emerald-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="mt-2 flex items-baseline gap-2">
+        <span class="text-2xl font-bold text-emerald-700">{{ counts.low if counts else 0 }}</span>
+        <span class="text-[11px] text-emerald-600/80">cleared</span>
+      </div>
+    </a>
 
-    <div style="display: flex; gap: 8px;">
-      <button type="submit" class="btn btn-primary">Apply Filters</button>
-      <a href="{{ url_for('faculty.submissions') }}" class="btn btn-secondary">Reset</a>
-    </div>
-  </form>
+    <!-- Metric 5: Requires Review -->
+    <a href="{{ url_for('faculty.submissions') }}?review=Pending+Review" 
+       class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all flex flex-col justify-between group">
+      <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <span>Pending Review</span>
+        <svg class="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="mt-2 flex items-baseline gap-2">
+        <span class="text-2xl font-bold text-slate-900">{{ counts.pending if counts else 0 }}</span>
+        <span class="text-[11px] text-slate-500">unreviewed</span>
+      </div>
+    </a>
 
-  <!-- Submissions Table -->
-  <div class="table-responsive">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Student</th>
-          <th>Assignment Name</th>
-          <th>Language</th>
-          <th>Submitted Date</th>
-          <th>Similarity Score</th>
-          <th>Review Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if submissions %}
-          {% for sub in submissions %}
-          <tr>
-            <td><strong>#{{ sub.id }}</strong></td>
-            <td>
-              <strong>{{ sub.full_name }}</strong>
-              <div style="font-size: 0.76rem; color: var(--text-muted);">{{ sub.username }}</div>
-            </td>
-            <td>
-              <div>{{ sub.assignment_title }}</div>
-              <small style="color: var(--text-muted);">{{ sub.subject }}</small>
-            </td>
-            <td><code>{{ sub.programming_language|upper }}</code></td>
-            <td style="font-size: 0.82rem;">{{ sub.submitted_at }}</td>
-            <td>
-              {% if sub.combined_similarity_score is not none %}
-                <span class="badge {% if sub.similarity_label == 'High Similarity' %}badge-high{% elif sub.similarity_label == 'Medium Similarity' %}badge-medium{% else %}badge-low{% endif %}">
-                  {{ sub.similarity_label }} ({{ sub.combined_similarity_score }}%)
-                </span>
-              {% else %}
-                <span class="badge badge-status">Processing</span>
-              {% endif %}
-            </td>
-            <td>
-              <span class="badge badge-status {% if sub.review_status == 'Reviewed' or sub.review_status == 'No Concern Identified' %}active{% elif sub.review_status == 'Further Investigation Required' %}investigate{% else %}pending{% endif %}">
-                {{ sub.review_status or 'Pending Review' }}
-              </span>
-            </td>
-            <td>
-              <a href="{{ url_for('faculty.analysis_detail', sub_id=sub.id) }}" class="btn btn-sm btn-primary">
-                Inspect & Review
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
-              No submissions match the current filter criteria.
-            </td>
-          </tr>
-        {% endif %}
-      </tbody>
-    </table>
+    <!-- Metric 6: Completed Reviews -->
+    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+      <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <span>Reviewed Actions</span>
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <div class="mt-2 flex items-baseline gap-2">
+        <span class="text-2xl font-bold text-slate-900">{{ counts.reviewed if counts else 0 }}</span>
+        <span class="text-[11px] text-slate-500">completed</span>
+      </div>
+    </div>
   </div>
+
+  <!-- 2. Modernized & Restructured Filter Bar Card -->
+  <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5" aria-labelledby="filterBarHeading">
+    <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+        </svg>
+        <h2 id="filterBarHeading" class="text-sm font-semibold text-slate-900 tracking-tight">Filter &amp; Query Submissions</h2>
+      </div>
+
+      <!-- Active Filter Counter or Clear Badge -->
+      {% if search_user or filter_asgn or filter_lang or filter_label or filter_review %}
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+          Filters Active
+        </span>
+        <a href="{{ url_for('faculty.submissions') }}" class="text-xs text-slate-500 hover:text-indigo-600 underline transition-colors">
+          Clear all
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <form method="GET" action="{{ url_for('faculty.submissions') }}" class="space-y-4" id="submissionsFilterForm">
+      <!-- Responsive Grid: Search Input (Ample Width) + Selectors -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5">
+        
+        <!-- Primary Search Student (Ample Width: 4 cols on desktop) -->
+        <div class="sm:col-span-2 lg:col-span-4">
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5" for="filterSearchInput">
+            Search Student
+          </label>
+          <div class="relative rounded-lg shadow-sm">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <input type="text" 
+                   id="filterSearchInput"
+                   name="search" 
+                   value="{{ search_user }}" 
+                   placeholder="Search student name, ID or username…" 
+                   class="block w-full pl-9 pr-3 py-2 text-sm bg-slate-50/50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+          </div>
+        </div>
+
+        <!-- Filter by Assignment (3 cols on desktop) -->
+        <div class="sm:col-span-1 lg:col-span-3">
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5" for="filterAssignmentSelect">
+            Assignment
+          </label>
+          <select id="filterAssignmentSelect" 
+                  name="assignment" 
+                  class="block w-full px-3 py-2 text-sm bg-slate-50/50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+            <option value="">All Assignments</option>
+            {% for a in assignments %}
+              <option value="{{ a.id }}" {% if filter_asgn == a.id|string %}selected{% endif %}>{{ a.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Language Selector (2 cols on desktop) -->
+        <div class="sm:col-span-1 lg:col-span-2">
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5" for="filterLanguageSelect">
+            Language
+          </label>
+          <select id="filterLanguageSelect" 
+                  name="language" 
+                  class="block w-full px-3 py-2 text-sm bg-slate-50/50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+            <option value="">All Languages</option>
+            <option value="python" {% if filter_lang == 'python' %}selected{% endif %}>Python</option>
+            <option value="c" {% if filter_lang == 'c' %}selected{% endif %}>C</option>
+            <option value="cpp" {% if filter_lang == 'cpp' %}selected{% endif %}>C++</option>
+            <option value="java" {% if filter_lang == 'java' %}selected{% endif %}>Java</option>
+            <option value="javascript" {% if filter_lang == 'javascript' %}selected{% endif %}>JavaScript</option>
+          </select>
+        </div>
+
+        <!-- Similarity Risk Level Selector (3 cols on desktop) -->
+        <div class="sm:col-span-2 lg:col-span-3">
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5" for="filterSimilaritySelect">
+            Similarity Risk Tier
+          </label>
+          <select id="filterSimilaritySelect" 
+                  name="similarity" 
+                  class="block w-full px-3 py-2 text-sm bg-slate-50/50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+            <option value="">All Risk Tiers</option>
+            <option value="High Similarity" {% if filter_label == 'High Similarity' %}selected{% endif %}>High Risk (&ge; 70% Overlap)</option>
+            <option value="Medium Similarity" {% if filter_label == 'Medium Similarity' %}selected{% endif %}>Medium Risk (30% &ndash; 69%)</option>
+            <option value="Low Similarity" {% if filter_label == 'Low Similarity' %}selected{% endif %}>Low Risk (&lt; 30% Baseline)</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- Secondary Row: Review Status Dropdown + Right-Aligned Action Buttons -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+        <div class="w-full sm:w-72">
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5" for="filterReviewSelect">
+            Faculty Review Status
+          </label>
+          <select id="filterReviewSelect" 
+                  name="review" 
+                  class="block w-full px-3 py-2 text-sm bg-slate-50/50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+            <option value="">All Review Statuses</option>
+            <option value="Pending Review" {% if filter_review == 'Pending Review' %}selected{% endif %}>Pending Review</option>
+            <option value="Reviewed" {% if filter_review == 'Reviewed' %}selected{% endif %}>Reviewed</option>
+            <option value="Further Investigation Required" {% if filter_review == 'Further Investigation Required' %}selected{% endif %}>Investigation Required</option>
+            <option value="No Concern Identified" {% if filter_review == 'No Concern Identified' %}selected{% endif %}>No Concern Identified</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons aligned neatly on the right -->
+        <div class="flex items-center justify-end gap-2.5 pt-2 sm:pt-4">
+          <a href="{{ url_for('faculty.submissions') }}" 
+             class="inline-flex items-center justify-center px-4 py-2 border border-slate-300 shadow-sm text-xs font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+            Reset
+          </a>
+          <button type="submit" 
+                  class="inline-flex items-center justify-center px-5 py-2 border border-transparent shadow-sm text-xs font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+            </svg>
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- 3. Optimized Data Table & Scannable Risk Matrix Card -->
+  <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" aria-labelledby="tableCardHeading">
+    <!-- Table Context Sub-Header -->
+    <div class="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-white">
+      <div>
+        <h3 id="tableCardHeading" class="text-sm font-semibold text-slate-900">
+          Submissions Records Log
+        </h3>
+        <p class="text-xs text-slate-500 mt-0.5">
+          Showing {{ submissions|length }} record{% if submissions|length != 1 %}s{% endif %} evaluated with combined token winnowing and AST syntax graphs.
+        </p>
+      </div>
+
+      <!-- Quick Export Link -->
+      <div>
+        <a href="{{ url_for('faculty.export_csv_report') }}" 
+           class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Export CSV Report
+        </a>
+      </div>
+    </div>
+
+    <!-- Scrollable Table Wrapper with Pinned Right Action Column -->
+    <div class="overflow-x-auto relative">
+      <table class="min-w-full divide-y divide-slate-200 text-left border-collapse" aria-label="Student Submissions and Plagiarism Analysis Results">
+        <!-- Styled Table Header: Light gray fill, small uppercase text, refined border -->
+        <thead class="bg-slate-50/80 backdrop-blur-sm">
+          <tr>
+            <th scope="col" class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-16 min-w-[64px]">
+              ID
+            </th>
+            <th scope="col" class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[190px]">
+              Student
+            </th>
+            <th scope="col" class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[210px] max-w-[250px]">
+              Assignment Name
+            </th>
+            <th scope="col" class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[100px]">
+              Language
+            </th>
+            <th scope="col" class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[130px] whitespace-nowrap">
+              Submitted Date
+            </th>
+            <th scope="col" class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[170px]">
+              Similarity Score
+            </th>
+            <th scope="col" class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[160px]">
+              Review Status
+            </th>
+            <!-- Fixed / Pinned Right Action Column -->
+            <th scope="col" class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[150px] text-right sticky right-0 bg-slate-50/95 border-l border-slate-200 shadow-[-4px_0_8px_rgba(0,0,0,0.02)]">
+              Action
+            </th>
+          </tr>
+        </thead>
+
+        <!-- Table Body with Reduced Vertical Padding and Subtle Hover Effect -->
+        <tbody class="divide-y divide-slate-200 bg-white">
+          {% if submissions %}
+            {% for sub in submissions %}
+            <tr class="hover:bg-slate-50/60 transition-colors group">
+              <!-- ID -->
+              <td class="py-3.5 px-4 text-xs font-mono font-medium text-slate-400">
+                #{{ sub.id }}
+              </td>
+
+              <!-- Student -->
+              <td class="py-3.5 px-4">
+                <div class="font-semibold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  {{ sub.full_name }}
+                </div>
+                <div class="text-xs font-mono text-slate-400">
+                  {{ sub.username }}
+                </div>
+              </td>
+
+              <!-- Assignment Name (Truncated with Native Tooltip) -->
+              <td class="py-3.5 px-4">
+                <div class="font-medium text-sm text-slate-900 truncate max-w-[230px]" title="{{ sub.assignment_title }}">
+                  {{ sub.assignment_title }}
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5 truncate max-w-[230px]" title="{{ sub.subject }}">
+                  <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                    {{ sub.subject }}
+                  </span>
+                </div>
+              </td>
+
+              <!-- Language -->
+              <td class="py-3.5 px-4">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                  {{ sub.programming_language|upper }}
+                </span>
+              </td>
+
+              <!-- Submitted Date -->
+              <td class="py-3.5 px-4 text-xs text-slate-500 whitespace-nowrap">
+                <div class="font-medium text-slate-700">
+                  {{ sub.submitted_at[:10] if sub.submitted_at else 'Recent' }}
+                </div>
+                <div class="text-[11px] text-slate-400">
+                  {{ sub.submitted_at[11:16] if sub.submitted_at and sub.submitted_at|length >= 16 else '' }}
+                </div>
+              </td>
+
+              <!-- Similarity Score: Elevated Semantic Badges -->
+              <td class="py-3.5 px-4">
+                {% if sub.combined_similarity_score is not none %}
+                  {% if sub.similarity_label == 'High Similarity' or sub.combined_similarity_score >= 70 %}
+                    <!-- High Risk / Violation Pill -->
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                      <svg class="w-3.5 h-3.5 text-red-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                      </svg>
+                      <span>High Risk ({{ "%.1f"|format(sub.combined_similarity_score) }}%)</span>
+                    </div>
+                  {% elif sub.similarity_label == 'Medium Similarity' or sub.combined_similarity_score >= 30 %}
+                    <!-- Medium Risk / Investigation Pill -->
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                      <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                      </svg>
+                      <span>Med Risk ({{ "%.1f"|format(sub.combined_similarity_score) }}%)</span>
+                    </div>
+                  {% else %}
+                    <!-- Low Risk / Cleared Pill -->
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                      </svg>
+                      <span>Low Risk ({{ "%.1f"|format(sub.combined_similarity_score) }}%)</span>
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <!-- Processing Pill -->
+                  <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-ping"></span>
+                    <span>Processing</span>
+                  </div>
+                {% endif %}
+              </td>
+
+              <!-- Review Status Badges -->
+              <td class="py-3.5 px-4">
+                {% if sub.review_status == 'Reviewed' or sub.review_status == 'No Concern Identified' %}
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {{ sub.review_status }}
+                  </span>
+                {% elif sub.review_status == 'Further Investigation Required' %}
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                    Investigation Req.
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Pending Review
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- Pinned / Sticky Action Column -->
+              <td class="py-3.5 px-4 text-right sticky right-0 bg-white group-hover:bg-slate-50/90 border-l border-slate-200 shadow-[-4px_0_8px_rgba(0,0,0,0.02)] transition-colors">
+                <a href="{{ url_for('faculty.analysis_detail', sub_id=sub.id) }}" 
+                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-600 hover:text-white border border-indigo-200 hover:border-indigo-600 transition-all shadow-sm"
+                   aria-label="Inspect &amp; Review submission #{{ sub.id }}">
+                  <span>Inspect</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <!-- Friendly Empty State -->
+            <tr>
+              <td colspan="8" class="py-16 px-4 text-center">
+                <div class="max-w-md mx-auto">
+                  <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                  </div>
+                  <h4 class="text-sm font-semibold text-slate-900 mb-1">No submissions found</h4>
+                  <p class="text-xs text-slate-500 mb-4">
+                    No student submissions match your selected search or filter criteria. Try broadening your query parameters.
+                  </p>
+                  <a href="{{ url_for('faculty.submissions') }}" 
+                     class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-sm">
+                    Reset Filter Criteria
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Footer with Summary Count -->
+    <div class="px-5 py-3 bg-slate-50/75 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+      <span>
+        Showing <strong>{{ submissions|length }}</strong> submission{% if submissions|length != 1 %}s{% endif %}
+      </span>
+      <span class="text-[11px] text-slate-400">
+        Click "Inspect" on any record to open the AST comparison and code diff viewer.
+      </span>
+    </div>
+  </section>
+
 </div>
 {% endblock %}

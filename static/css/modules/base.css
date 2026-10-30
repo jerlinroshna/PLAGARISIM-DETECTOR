@@ -424,6 +424,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Institutional Topbar (Phase C: Sticky, subtle border, backdrop-blur) */
@@ -464,6 +466,7 @@
 .portal-badge-container {
   display: flex;
   flex-direction: column;
+  padding-top: 4px;
 }
 
 /* Breadcrumb Navigation */
@@ -473,7 +476,7 @@
   gap: 6px;
   font-size: 13px;
   color: var(--text-secondary);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   font-weight: 500;
 }
 
@@ -487,13 +490,34 @@
   font-size: 11px;
 }
 
+.page-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .page-title {
-  font-size: 24px !important;
+  font-size: 20px !important;
   font-weight: 700 !important;
   color: var(--text-primary) !important;
   line-height: 1.25;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
   margin: 0;
+}
+
+.page-header-subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+}
+
+.page-header-subtitle::before {
+  content: "•";
+  margin-right: 8px;
+  color: var(--text-muted);
 }
 
 /* Phase A & C: Search Pill Component */

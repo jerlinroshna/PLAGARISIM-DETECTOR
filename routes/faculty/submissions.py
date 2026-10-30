@@ -70,6 +70,16 @@ def submissions():
 
     all_subs = conn.execute(query, params).fetchall()
 
+    # Calculate real-time summary statistics for metrics banner
+    counts = {
+        "total": len(all_subs),
+        "high": sum(1 for s in all_subs if s["similarity_label"] == "High Similarity"),
+        "medium": sum(1 for s in all_subs if s["similarity_label"] == "Medium Similarity"),
+        "low": sum(1 for s in all_subs if s["similarity_label"] == "Low Similarity"),
+        "pending": sum(1 for s in all_subs if (s["review_status"] or "Pending Review") == "Pending Review"),
+        "reviewed": sum(1 for s in all_subs if s["review_status"] in ("Reviewed", "No Concern Identified")),
+    }
+
     assignments_list = conn.execute("SELECT id, title FROM assignments ORDER BY title").fetchall()
     conn.close()
 
@@ -82,7 +92,8 @@ def submissions():
         filter_asgn=filter_asgn,
         filter_lang=filter_lang,
         filter_label=filter_label,
-        filter_review=filter_review
+        filter_review=filter_review,
+        counts=counts
     )
 
 @faculty_bp.route("/submit", methods=["GET", "POST"])

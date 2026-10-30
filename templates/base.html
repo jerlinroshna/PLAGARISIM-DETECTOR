@@ -133,7 +133,10 @@
               <span class="breadcrumb-sep">/</span>
               <span>{% block breadcrumb_page %}Workspace{% endblock %}</span>
             </div>
-            <h1 class="page-title">{% block page_title %}Academic Portal{% endblock %}</h1>
+            <div class="page-title-row">
+              <h1 class="page-title">{% block page_title %}Academic Portal{% endblock %}</h1>
+              {% block page_subtitle %}{% endblock %}
+            </div>
           </div>
         </div>
 
@@ -145,6 +148,15 @@
           </svg>
           <input type="text" class="topbar-search-input" placeholder="Search…" id="globalSearchInput" aria-label="Search">
           <kbd class="search-kbd-chip" id="searchKbdChip" title="Press Ctrl+K to search">Ctrl K</kbd>
+          <script>
+            (function(){
+              try {
+                var isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent);
+                var chip = document.getElementById('searchKbdChip');
+                if (chip && isMac) { chip.textContent = '⌘ K'; chip.title = 'Press ⌘K to search'; }
+              } catch(e){}
+            })();
+          </script>
         </div>
         {% endif %}
 
@@ -214,7 +226,7 @@
           </div>
           {% endif %}
 
-          <!-- Student Profile & Dropdown -->
+          <!-- User Profile & Dropdown -->
           <div class="user-menu-wrapper">
             <div class="user-menu-btn" id="userProfileBtn">
               <div class="user-avatar" id="topbarUserAvatar">
@@ -234,11 +246,6 @@
                 </a>
                 <a href="{{ url_for('student.profile') }}" class="user-menu-link">
                   <span>&#9881;</span> Settings
-                </a>
-                <div class="user-menu-divider"></div>
-              {% elif current_user.role == 'faculty' %}
-                <a href="{{ url_for('faculty.profile') }}" class="user-menu-link">
-                  <span>&#9881;</span> Profile
                 </a>
                 <div class="user-menu-divider"></div>
               {% elif current_user.role == 'faculty' %}
@@ -289,7 +296,7 @@
     </div>
   {% endif %}
 
-  <script src="{{ url_for('static', filename='js/main.js') }}?v=3.3"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}?v=3.4"></script>
   {% block scripts %}{% endblock %}
   <!-- Logout Confirmation Dialog -->
   <dialog class="accessible-modal-dialog" id="logoutConfirmModal" aria-labelledby="logoutModalTitle" aria-describedby="logoutModalDesc">
