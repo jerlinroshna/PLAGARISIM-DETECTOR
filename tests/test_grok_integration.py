@@ -14,11 +14,16 @@ class GrokIntegrationTestCase(unittest.TestCase):
         # Ensure database tables and columns are up to date
         database.init_db()
 
+        conn = database.get_db_connection()
+        row = conn.execute("SELECT submission_id FROM analysis_results ORDER BY id ASC LIMIT 1").fetchone()
+        self.sub_id = row["submission_id"] if row else 1
+        conn.close()
+
     def test_missing_api_key_returns_clear_error(self):
         """When XAI_API_KEY is not set or empty, returns clear error and success=False."""
         with patch.dict(os.environ, {"XAI_API_KEY": ""}, clear=False):
             with patch("config.XAI_API_KEY", ""):
-                result = GrokService.explain_submission(1, force_refresh=True)
+                result = GrokService.explain_submission(self.sub_id, force_refresh=True)
                 self.assertFalse(result.get("success"))
                 self.assertIn("API key is missing", result.get("error", ""))
 
@@ -26,7 +31,7 @@ class GrokIntegrationTestCase(unittest.TestCase):
         """Verifies that extracted evidence omits student personal identity (name, username, id, email)
         and omits full source files, sending only required metrics and matched segments.
         """
-        evidence = GrokService.extract_evidence_for_grok(1)
+        evidence = GrokService.extract_evidence_for_grok(self.sub_id)
         if evidence:
             # Must NOT contain personal identifier fields
             self.assertNotIn("student_name", evidence)
@@ -99,13 +104,13 @@ class GrokIntegrationTestCase(unittest.TestCase):
         mock_post.return_value = mock_response
 
         with patch.dict(os.environ, {"XAI_API_KEY": "xai-test-key-12345"}):
-            result = GrokService.explain_submission(1, force_refresh=True)
+            result = GrokService.explain_submission(self.sub_id, force_refresh=True)
             self.assertTrue(result.get("success"))
             self.assertIn("Executive Summary", result.get("explanation"))
 
             # Verify saved in database
             conn = database.get_db_connection()
-            row = conn.execute("SELECT grok_explanation FROM analysis_results WHERE submission_id = 1").fetchone()
+            row = conn.execute("SELECT grok_explanation FROM analysis_results WHERE submission_id = ?", (self.sub_id,)).fetchone()
             conn.close()
             if row:
                 self.assertIsNotNone(row["grok_explanation"])
@@ -114,7 +119,7 @@ class GrokIntegrationTestCase(unittest.TestCase):
     def test_faculty_only_access_control(self):
         """Verifies that non-faculty and unauthenticated users cannot trigger Grok explain endpoint."""
         # 1. Unauthenticated request should redirect to login
-        res_unauth = self.client.post("/faculty/analysis/1/explain", json={"refresh": True})
+        res_unauth = self.client.post(f"/faculty/analysis/{self.sub_id}/explain", json={"refresh": True})
         self.assertEqual(res_unauth.status_code, 302)
         self.assertIn("/login", res_unauth.headers.get("Location", ""))
 
@@ -125,7 +130,7 @@ class GrokIntegrationTestCase(unittest.TestCase):
             sess["role"] = "student"
             sess["full_name"] = "Student 001"
 
-        res_student = self.client.post("/faculty/analysis/1/explain", json={"refresh": True})
+        res_student = self.client.post(f"/faculty/analysis/{self.sub_id}/explain", json={"refresh": True})
         self.assertIn(res_student.status_code, (302, 403))
 
     @patch("services.grok_service.requests.post")
@@ -151,7 +156,7 @@ class GrokIntegrationTestCase(unittest.TestCase):
             sess["full_name"] = "Dr. Faculty"
 
         with patch.dict(os.environ, {"XAI_API_KEY": "xai-test-key-faculty"}):
-            res = self.client.post("/faculty/analysis/1/explain", json={"refresh": True})
+            res = self.client.post(f"/faculty/analysis/{self.sub_id}/explain", json={"refresh": True})
             self.assertEqual(res.status_code, 200)
             data = res.get_json()
             self.assertTrue(data.get("success"))
@@ -167,7 +172,7 @@ class GrokIntegrationTestCase(unittest.TestCase):
             sess["role"] = "faculty"
             sess["full_name"] = "Dr. Faculty"
 
-        res = self.client.get("/faculty/analysis/1")
+        res = self.client.get(f"/faculty/analysis/{self.sub_id}")
         self.assertEqual(res.status_code, 200)
         html = res.data.decode("utf-8")
         self.assertIn("btn-explain-grok", html)
