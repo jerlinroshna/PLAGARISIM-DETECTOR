@@ -477,4 +477,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
 
+  // Initial checklist validation on load
+  if (typeof updateChecklist === "function") {
+    updateChecklist();
+  }
 });

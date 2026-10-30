@@ -84,31 +84,20 @@
       </div>
 
       <div class="portal-tabs-container">
-        <!-- Hidden input to track active mode: "upload" or "paste" -->
-        <input type="hidden" name="submission_mode" id="submission_mode" value="upload">
+        <!-- Hidden input to track active mode: "upload" or "paste" (default: "paste") -->
+        <input type="hidden" name="submission_mode" id="submission_mode" value="paste">
         <!-- Tab Switches -->
         <div class="portal-tabs">
-          <button type="button" class="portal-tab-btn active" data-tab-target="tabUploadFile">
-            &#128194; Upload Source File
-          </button>
-          <button type="button" class="portal-tab-btn" data-tab-target="tabPasteCode">
+          <button type="button" class="portal-tab-btn active" data-tab-target="tabPasteCode" id="btnTabPaste">
             &#9998; Paste Code in Editor
           </button>
+          <button type="button" class="portal-tab-btn" data-tab-target="tabUploadFile" id="btnTabUpload">
+            &#128194; Upload Source File
+          </button>
         </div>
 
-        <!-- Tab 1: Upload File -->
-        <div class="portal-tab-content" id="tabUploadFile" style="display: block;">
-          <div class="upload-dropzone" id="uploadDropzone">
-            <div class="dropzone-icon">&#128229;</div>
-            <div class="dropzone-text">Drag and drop your source code file here</div>
-            <div class="dropzone-subtext">or click to browse from your computer (Max: 5 MB)</div>
-            <input type="file" name="code_file" id="code_file" accept=".py,.c,.cpp,.cc,.cxx,.java,.js" style="display: none;">
-          </div>
-          <div id="filePreviewInfo" style="display: none;"></div>
-        </div>
-
-        <!-- Tab 2: Paste Code -->
-        <div class="portal-tab-content" id="tabPasteCode" style="display: none;">
+        <!-- Tab 1: Paste Code (Default Active) -->
+        <div class="portal-tab-content" id="tabPasteCode" style="display: block;">
           <div class="editor-wrapper">
             <div class="editor-toolbar" style="flex-wrap: wrap; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -138,6 +127,17 @@ int main() {
               <div class="editor-stat-chip">Comments: <strong id="stat-comments">0</strong></div>
             </div>
           </div>
+        </div>
+
+        <!-- Tab 2: Upload File -->
+        <div class="portal-tab-content" id="tabUploadFile" style="display: none;">
+          <div class="upload-dropzone" id="uploadDropzone">
+            <div class="dropzone-icon">&#128229;</div>
+            <div class="dropzone-text">Drag and drop your source code file here</div>
+            <div class="dropzone-subtext">or click to browse from your computer (Max: 5 MB)</div>
+            <input type="file" name="code_file" id="code_file" accept=".py,.c,.cpp,.cc,.cxx,.java,.js" style="display: none;">
+          </div>
+          <div id="filePreviewInfo" style="display: none;"></div>
         </div>
       </div>
     </div>
