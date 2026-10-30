@@ -1,0 +1,101 @@
+/* ==========================================================================
+   Source-Code Plagiarism Detector - College Portal Design System
+   A clean, professional, and accessible university academic web application.
+   ========================================================================== */
+
+:root {
+  /* ==========================================================================
+     PHASE B: ONE COHERENT THEME - LIGHT MODE (DEFAULT)
+     ========================================================================== */
+  --bg-page: #F4F6FB;
+  --surface: #FFFFFF;
+  --surface-subtle: #F8FAFC;
+  --border: #E5E9F2;
+  --border-light: #E5E9F2;
+  --border-color: #E5E9F2;
+  --border-focus: #2563EB;
+
+  --text-primary: #0F172A;   /* slate-900 */
+  --text-secondary: #475569; /* slate-600 */
+  --text-muted: #64748B;
+  --text-light: #94A3B8;
+  --text-white: #FFFFFF;
+
+  /* Aliases for codebase backward compatibility */
+  --bg-main: var(--bg-page);
+  --bg-card: var(--surface);
+  --bg-alt: var(--surface-subtle);
+  --text-main: var(--text-primary);
+  --primary: #1B365D;
+  --primary-hover: #102A4E;
+  --primary-light: #E8EEF7;
+  --primary-border: #93C5FD;
+  --accent: #2563EB;
+  --accent-hover: #1D4ED8;
+  --accent-light: #EFF6FF;
+
+  /* Institutional Sidebar & Hero Navy (Reserved for sidebar and hero only) */
+  --bg-sidebar: #0B132B;
+  --bg-sidebar-hover: #162347;
+  --bg-sidebar-active: #2563EB;
+
+  /* Brand Palette */
+  --brand-500: #2563EB;
+  --brand-600: #1D4ED8;
+  --brand-tint: rgba(37, 99, 235, 0.12);
+
+  --accent-cyan: #0EA5E9;
+  --cyan-tint: rgba(14, 165, 233, 0.12);
+
+  --success: #16A34A;
+  --success-tint: rgba(22, 163, 74, 0.12);
+
+  --warning: #F59E0B;
+  --warning-tint: rgba(245, 158, 11, 0.12);
+
+  --orange: #EA580C;
+  --orange-tint: rgba(234, 88, 12, 0.12);
+
+  --danger: #DC2626;
+  --danger-tint: rgba(220, 38, 38, 0.12);
+
+  --indigo: #6366F1;
+  --indigo-tint: rgba(99, 102, 241, 0.12);
+
+  /* Semantic Status Badges (10-14% Soft Tint) */
+  --badge-high-bg: rgba(220, 38, 38, 0.12);
+  --badge-high-text: #DC2626;
+  --badge-high-border: rgba(220, 38, 38, 0.28);
+
+  --badge-med-bg: rgba(245, 158, 11, 0.12);
+  --badge-med-text: #D97706;
+  --badge-med-border: rgba(245, 158, 11, 0.28);
+
+  --badge-low-bg: rgba(22, 163, 74, 0.12);
+  --badge-low-text: #16A34A;
+  --badge-low-border: rgba(22, 163, 74, 0.28);
+
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --code-font: "JetBrains Mono", "Consolas", "Courier New", Courier, monospace;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
