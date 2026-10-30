@@ -1,5 +1,6 @@
 // CodeGuard Course Assignments Management Controller
-document.addEventListener("DOMContentLoaded", function () {
+(function () {
+  function init_assignments() {
   // ─────────────────────────────────────────────────────────────────────────
   // 22. Manage Course Assignments Controller
   // ─────────────────────────────────────────────────────────────────────────
@@ -771,6 +772,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-});
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init_assignments);
+  } else {
+    init_assignments();
+  }
+})();
 
 

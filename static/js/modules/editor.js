@@ -1,5 +1,6 @@
 // CodeGuard Code Editor, Upload & Submission Validation Module
-document.addEventListener("DOMContentLoaded", function () {
+(function () {
+  function initEditor() {
   // 3. Multi-Language Syntax Auto-Detector
   function detectLanguageFromCode(code) {
     if (!code || !code.trim()) return null;
@@ -481,4 +482,15 @@ document.addEventListener("DOMContentLoaded", function () {
   if (typeof updateChecklist === "function") {
     updateChecklist();
   }
-});
+
+  window.handleFileSelected = handleFileSelected;
+  window.updateChecklist = updateChecklist;
+  window.handlePastedCodeAnalysis = handlePastedCodeAnalysis;
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initEditor);
+  } else {
+    initEditor();
+  }
+})();

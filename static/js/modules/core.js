@@ -1,5 +1,6 @@
 // CodeGuard Core Navigation, Theme & Global Shortcuts Module
-document.addEventListener("DOMContentLoaded", function () {
+(function () {
+  function init_core() {
   // 1. Mobile Sidebar Drawer & Backdrop
   const mobileMenuBtn = document.getElementById("mobileMenuBtn");
   const sidebar = document.getElementById("appSidebar");
@@ -290,4 +291,11 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-});
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init_core);
+  } else {
+    init_core();
+  }
+})();

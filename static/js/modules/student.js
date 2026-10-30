@@ -1,5 +1,6 @@
 // CodeGuard Student Dashboard & Workspace Module
-document.addEventListener("DOMContentLoaded", function () {
+(function () {
+  function init_student() {
   // 17. Student Dashboard Controller
   const studentDashboard = document.getElementById("studentDashboardApp");
   if (studentDashboard) {
@@ -337,4 +338,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   } catch (e) {}
 
-});
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init_student);
+  } else {
+    init_student();
+  }
+})();

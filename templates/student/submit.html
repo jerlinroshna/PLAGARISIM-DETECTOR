@@ -1,8 +1,128 @@
 {% extends "base.html" %}
 
-{% block title %}Submit Code{% endblock %}
-{% block breadcrumb_page %}Submit Code{% endblock %}
-{% block page_title %}Submit Programming Assignment{% endblock %}
+{% block title %}Submit Code
+<script>
+window.switchSubmissionTab = function(targetId) {
+  const pasteTab = document.getElementById("tabPasteCode");
+  const uploadTab = document.getElementById("tabUploadFile");
+  const btnPaste = document.getElementById("btnTabPaste");
+  const btnUpload = document.getElementById("btnTabUpload");
+  const modeInput = document.getElementById("submission_mode");
+  const fileInput = document.getElementById("code_file");
+  const filePreview = document.getElementById("filePreviewInfo");
+  const codeTextarea = document.getElementById("code_text");
+
+  if (targetId === "tabUploadFile") {
+    if (pasteTab) pasteTab.style.display = "none";
+    if (uploadTab) uploadTab.style.display = "block";
+    if (btnPaste) btnPaste.classList.remove("active");
+    if (btnUpload) btnUpload.classList.add("active");
+    if (modeInput) modeInput.value = "upload";
+  } else {
+    if (uploadTab) uploadTab.style.display = "none";
+    if (pasteTab) pasteTab.style.display = "block";
+    if (btnUpload) btnUpload.classList.remove("active");
+    if (btnPaste) btnPaste.classList.add("active");
+    if (modeInput) modeInput.value = "paste";
+    if (fileInput) fileInput.value = "";
+    if (filePreview) filePreview.style.display = "none";
+    if (codeTextarea) {
+      codeTextarea.focus();
+      if (typeof handlePastedCodeAnalysis === "function") {
+        handlePastedCodeAnalysis();
+      }
+    }
+  }
+
+  if (typeof updateChecklist === "function") {
+    updateChecklist();
+  }
+};
+</script>
+
+{% endblock %}
+{% block breadcrumb_page %}Submit Code
+<script>
+window.switchSubmissionTab = function(targetId) {
+  const pasteTab = document.getElementById("tabPasteCode");
+  const uploadTab = document.getElementById("tabUploadFile");
+  const btnPaste = document.getElementById("btnTabPaste");
+  const btnUpload = document.getElementById("btnTabUpload");
+  const modeInput = document.getElementById("submission_mode");
+  const fileInput = document.getElementById("code_file");
+  const filePreview = document.getElementById("filePreviewInfo");
+  const codeTextarea = document.getElementById("code_text");
+
+  if (targetId === "tabUploadFile") {
+    if (pasteTab) pasteTab.style.display = "none";
+    if (uploadTab) uploadTab.style.display = "block";
+    if (btnPaste) btnPaste.classList.remove("active");
+    if (btnUpload) btnUpload.classList.add("active");
+    if (modeInput) modeInput.value = "upload";
+  } else {
+    if (uploadTab) uploadTab.style.display = "none";
+    if (pasteTab) pasteTab.style.display = "block";
+    if (btnUpload) btnUpload.classList.remove("active");
+    if (btnPaste) btnPaste.classList.add("active");
+    if (modeInput) modeInput.value = "paste";
+    if (fileInput) fileInput.value = "";
+    if (filePreview) filePreview.style.display = "none";
+    if (codeTextarea) {
+      codeTextarea.focus();
+      if (typeof handlePastedCodeAnalysis === "function") {
+        handlePastedCodeAnalysis();
+      }
+    }
+  }
+
+  if (typeof updateChecklist === "function") {
+    updateChecklist();
+  }
+};
+</script>
+
+{% endblock %}
+{% block page_title %}Submit Programming Assignment
+<script>
+window.switchSubmissionTab = function(targetId) {
+  const pasteTab = document.getElementById("tabPasteCode");
+  const uploadTab = document.getElementById("tabUploadFile");
+  const btnPaste = document.getElementById("btnTabPaste");
+  const btnUpload = document.getElementById("btnTabUpload");
+  const modeInput = document.getElementById("submission_mode");
+  const fileInput = document.getElementById("code_file");
+  const filePreview = document.getElementById("filePreviewInfo");
+  const codeTextarea = document.getElementById("code_text");
+
+  if (targetId === "tabUploadFile") {
+    if (pasteTab) pasteTab.style.display = "none";
+    if (uploadTab) uploadTab.style.display = "block";
+    if (btnPaste) btnPaste.classList.remove("active");
+    if (btnUpload) btnUpload.classList.add("active");
+    if (modeInput) modeInput.value = "upload";
+  } else {
+    if (uploadTab) uploadTab.style.display = "none";
+    if (pasteTab) pasteTab.style.display = "block";
+    if (btnUpload) btnUpload.classList.remove("active");
+    if (btnPaste) btnPaste.classList.add("active");
+    if (modeInput) modeInput.value = "paste";
+    if (fileInput) fileInput.value = "";
+    if (filePreview) filePreview.style.display = "none";
+    if (codeTextarea) {
+      codeTextarea.focus();
+      if (typeof handlePastedCodeAnalysis === "function") {
+        handlePastedCodeAnalysis();
+      }
+    }
+  }
+
+  if (typeof updateChecklist === "function") {
+    updateChecklist();
+  }
+};
+</script>
+
+{% endblock %}
 
 {% block content %}
 <div style="max-width: 900px; margin: 0 auto;">
@@ -88,10 +208,10 @@
         <input type="hidden" name="submission_mode" id="submission_mode" value="paste">
         <!-- Tab Switches -->
         <div class="portal-tabs">
-          <button type="button" class="portal-tab-btn active" data-tab-target="tabPasteCode" id="btnTabPaste">
+          <button type="button" class="portal-tab-btn active" data-tab-target="tabPasteCode" id="btnTabPaste" onclick="switchSubmissionTab('tabPasteCode')">
             &#9998; Paste Code in Editor
           </button>
-          <button type="button" class="portal-tab-btn" data-tab-target="tabUploadFile" id="btnTabUpload">
+          <button type="button" class="portal-tab-btn" data-tab-target="tabUploadFile" id="btnTabUpload" onclick="switchSubmissionTab('tabUploadFile')">
             &#128194; Upload Source File
           </button>
         </div>
@@ -131,11 +251,11 @@ int main() {
 
         <!-- Tab 2: Upload File -->
         <div class="portal-tab-content" id="tabUploadFile" style="display: none;">
-          <div class="upload-dropzone" id="uploadDropzone">
+          <div class="upload-dropzone" id="uploadDropzone" onclick="document.getElementById('code_file').click()">
             <div class="dropzone-icon">&#128229;</div>
             <div class="dropzone-text">Drag and drop your source code file here</div>
             <div class="dropzone-subtext">or click to browse from your computer (Max: 5 MB)</div>
-            <input type="file" name="code_file" id="code_file" accept=".py,.c,.cpp,.cc,.cxx,.java,.js" style="display: none;">
+            <input type="file" name="code_file" id="code_file" accept=".py,.c,.cpp,.cc,.cxx,.java,.js" style="display: none;" onchange="if(this.files&&this.files.length>0&&typeof handleFileSelected==='function'){handleFileSelected(this.files[0]);}"> 
           </div>
           <div id="filePreviewInfo" style="display: none;"></div>
         </div>
@@ -241,4 +361,44 @@ int main() {
     </div>
   </div>
 </div>
+
+<script>
+window.switchSubmissionTab = function(targetId) {
+  const pasteTab = document.getElementById("tabPasteCode");
+  const uploadTab = document.getElementById("tabUploadFile");
+  const btnPaste = document.getElementById("btnTabPaste");
+  const btnUpload = document.getElementById("btnTabUpload");
+  const modeInput = document.getElementById("submission_mode");
+  const fileInput = document.getElementById("code_file");
+  const filePreview = document.getElementById("filePreviewInfo");
+  const codeTextarea = document.getElementById("code_text");
+
+  if (targetId === "tabUploadFile") {
+    if (pasteTab) pasteTab.style.display = "none";
+    if (uploadTab) uploadTab.style.display = "block";
+    if (btnPaste) btnPaste.classList.remove("active");
+    if (btnUpload) btnUpload.classList.add("active");
+    if (modeInput) modeInput.value = "upload";
+  } else {
+    if (uploadTab) uploadTab.style.display = "none";
+    if (pasteTab) pasteTab.style.display = "block";
+    if (btnUpload) btnUpload.classList.remove("active");
+    if (btnPaste) btnPaste.classList.add("active");
+    if (modeInput) modeInput.value = "paste";
+    if (fileInput) fileInput.value = "";
+    if (filePreview) filePreview.style.display = "none";
+    if (codeTextarea) {
+      codeTextarea.focus();
+      if (typeof handlePastedCodeAnalysis === "function") {
+        handlePastedCodeAnalysis();
+      }
+    }
+  }
+
+  if (typeof updateChecklist === "function") {
+    updateChecklist();
+  }
+};
+</script>
+
 {% endblock %}

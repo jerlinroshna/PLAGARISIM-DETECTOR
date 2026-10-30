@@ -1,5 +1,6 @@
 // CodeGuard Faculty Workspace & Comparison Diff Module
-document.addEventListener("DOMContentLoaded", function () {
+(function () {
+  function init_faculty() {
   // 13. Synchronized scrolling for side-by-side faculty inspection (preserved)
   const studentPane = document.getElementById("student-code-pane");
   const histPane = document.getElementById("hist-code-pane");
@@ -111,4 +112,11 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-});
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init_faculty);
+  } else {
+    init_faculty();
+  }
+})();
