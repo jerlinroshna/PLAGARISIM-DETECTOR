@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Academic Portal{% endblock %} - CodeGuard Academic Integrity</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.3">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   {% block head %}{% endblock %}
 </head>
-<body>
+<body class="{% if current_user %}{% if current_user.role == 'faculty' %}portal-faculty{% elif current_user.role == 'student' %}portal-student{% endif %}{% endif %}">
   {% if current_user %}
   <div class="app-container">
     <!-- Left Navigation Sidebar -->
