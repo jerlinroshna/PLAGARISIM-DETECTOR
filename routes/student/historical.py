@@ -31,9 +31,9 @@ def historical():
                source_filename, source_code, batch_label, created_at
         FROM historical_submissions
         WHERE is_authorized_for_students = 1
-          AND (student_id = ? OR student_id = ? OR (? = 'demo_student' AND student_id IN ('STU001', 'demo_student', 'DEMO-HIST-STU1')))
+          AND (student_id = ? OR student_id = ?)
     """
-    params = [user["username"], str(user["id"]), user["username"]]
+    params = [user["username"], str(user["id"])]
 
     if filter_year:
         query += " AND academic_year = ?"
@@ -54,16 +54,16 @@ def historical():
     years = conn.execute("""
         SELECT DISTINCT academic_year FROM historical_submissions
         WHERE is_authorized_for_students = 1
-          AND (student_id = ? OR student_id = ? OR (? = 'demo_student' AND student_id IN ('STU001', 'demo_student', 'DEMO-HIST-STU1')))
+          AND (student_id = ? OR student_id = ?)
         ORDER BY academic_year DESC
-    """, (user["username"], str(user["id"]), user["username"])).fetchall()
+    """, (user["username"], str(user["id"]))).fetchall()
 
     subjects = conn.execute("""
         SELECT DISTINCT subject FROM historical_submissions
         WHERE is_authorized_for_students = 1
-          AND (student_id = ? OR student_id = ? OR (? = 'demo_student' AND student_id IN ('STU001', 'demo_student', 'DEMO-HIST-STU1')))
+          AND (student_id = ? OR student_id = ?)
         ORDER BY subject
-    """, (user["username"], str(user["id"]), user["username"])).fetchall()
+    """, (user["username"], str(user["id"]))).fetchall()
 
     conn.close()
 

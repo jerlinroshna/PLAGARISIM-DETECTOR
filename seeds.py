@@ -31,14 +31,6 @@ def seed_demo_accounts():
                 (uname, student_pw_hash, dname, "student", email)
             )
 
-    # Dedicated demo student account (demo_student)
-    cursor.execute("SELECT id FROM users WHERE username = 'demo_student'")
-    if not cursor.fetchone():
-        cursor.execute(
-            "INSERT INTO users (username, password_hash, full_name, role, email) VALUES (?, ?, ?, ?, ?)",
-            ("demo_student", student_pw_hash, "Demo Student", "student", "demo_student@college.edu")
-        )
-    csv_rows.append(["demo_student", "Demo Student", "student", "Student@123"])
 
     # 20 Faculty accounts (FAC001 - FAC020)
     faculty_pw_hash = generate_password_hash("Faculty@123")
@@ -307,7 +299,7 @@ int main() {
             INSERT INTO historical_submissions 
             (student_id, academic_year, subject, assignment_name, programming_language, source_filename, source_code, batch_label, is_authorized_for_students, uploaded_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, [(f"STU{idx+1:03d}", h[0], h[1], h[2], h[3], h[4], h[5], "[DEMO] " + h[6], 1, h[7]) for idx, h in enumerate(historical_samples)])
+        """, [(f"STU{idx+1:03d}", h[0], h[1], h[2], h[3], h[4], h[5], "" + h[6], 1, h[7]) for idx, h in enumerate(historical_samples)])
 
     # Ensure all demo records have student_id populated with student usernames
     cursor.execute("""
@@ -350,12 +342,14 @@ def seed_sample_student_submissions():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Find candidate demo student accounts: 'demo_student' and 'STU001'
-    cursor.execute("SELECT id, username FROM users WHERE username IN ('demo_student', 'STU001')")
-    demo_students = cursor.fetchall()
-    if not demo_students:
+    # Fetch realistic student accounts to distribute baseline submissions
+    stu_rows = cursor.execute(
+        "SELECT id, username FROM users WHERE username IN ('STU001', 'STU002', 'STU003', 'STU004', 'STU005') ORDER BY username ASC"
+    ).fetchall()
+    if not stu_rows:
         conn.close()
         return
+    stu_map = {r["username"]: r["id"] for r in stu_rows}
 
     # Helper for relative dates across past 6 calendar months
     now = datetime.now()
@@ -399,7 +393,7 @@ def seed_sample_student_submissions():
         # 1. 0-20% Low Similarity (C, Asgn 1, Month -5)
         (
             a1,
-            "[DEMO] Iterative Digit Extraction & Counter",
+            "Iterative Digit Extraction & Counter",
             "c",
             "digit_counter.c",
             """#include <stdio.h>
@@ -441,7 +435,7 @@ int main() {
         # 2. 21-40% Low Similarity (Python, Asgn 2, Month -4)
         (
             a2,
-            "[DEMO] Sequence Generator & Term Display",
+            "Sequence Generator & Term Display",
             "python",
             "fib_generator.py",
             """def generate_fibonacci_sequence(limit):
@@ -478,7 +472,7 @@ if __name__ == '__main__':
         # 3. 41-60% Medium Similarity (Java, Asgn 3, Month -3)
         (
             a3,
-            "[DEMO] Account Balance Management & Ledger",
+            "Account Balance Management & Ledger",
             "java",
             "BankAccount.java",
             """public class BankAccount {
@@ -527,7 +521,7 @@ if __name__ == '__main__':
         # 4. 61-80% High Similarity (Python, Asgn 4, Month -2)
         (
             a4,
-            "[DEMO] String Tokenizer & Bi-directional Slicer",
+            "String Tokenizer & Bi-directional Slicer",
             "python",
             "palindrome_slicer.py",
             """import re
@@ -565,7 +559,7 @@ if __name__ == '__main__':
         # 5. 81-100% High Similarity (Java, Asgn 3, Month -2)
         (
             a3,
-            "[DEMO] Banking Transaction & Concurrency Model",
+            "Banking Transaction & Concurrency Model",
             "java",
             "TransactionLedger.java",
             """public class TransactionLedger {
@@ -608,7 +602,7 @@ if __name__ == '__main__':
         # 6. Active: Processing (Python, Asgn 2, Month -1)
         (
             a2,
-            "[DEMO] Optimized Fibonacci Matrix Exponentiation",
+            "Optimized Fibonacci Matrix Exponentiation",
             "python",
             "matrix_fib.py",
             """def matrix_mult_2x2(A, B):
@@ -629,7 +623,7 @@ def fast_fibonacci(n):
         # 7. Active: Pending (C, Asgn 1, Current Month)
         (
             a1,
-            "[DEMO] Pointer Arithmetic & Memory Buffer",
+            "Pointer Arithmetic & Memory Buffer",
             "c",
             "memory_buffer.c",
             """#include <stdio.h>
@@ -655,7 +649,7 @@ void reverse_buffer(int *arr, int len) {
         # 8. Failed: Compilation error (Java, Asgn 3, Current Month)
         (
             a3,
-            "[DEMO] Multi-threaded Transaction Queue",
+            "Multi-threaded Transaction Queue",
             "java",
             "FaultyQueue.java",
             """public class FaultyQueue {
@@ -669,18 +663,31 @@ void reverse_buffer(int *arr, int len) {
         )
     ]
 
-    for student in demo_students:
-        stu_id = student["id"]
-        # Check if demo submissions already exist for this student to prevent duplicate insertions
-        existing_demo = cursor.execute(
-            "SELECT COUNT(*) FROM student_submissions WHERE student_id = ? AND title LIKE '[DEMO]%'",
-            (stu_id,)
-        ).fetchone()[0]
+    # Student-to-specification assignment mapping:
+    # Distribute realistic submissions across STU001, STU002, STU003, STU004, STU005
+    student_spec_map = {
+        "STU001": [0, 1, 2, 3, 4, 5, 6, 7],
+        "STU002": [0, 1],
+        "STU003": [2, 3],
+        "STU004": [4, 5],
+        "STU005": [6, 7]
+    }
 
-        if existing_demo > 0:
-            continue  # Already seeded for this demo student
+    for uname, spec_indices in student_spec_map.items():
+        if uname not in stu_map:
+            continue
+        stu_id = stu_map[uname]
 
-        for asgn_id, title, lang, fname, code, status, sub_date, sim_res, fac_rev in demo_specs:
+        for spec_idx in spec_indices:
+            asgn_id, title, lang, fname, code, status, sub_date, sim_res, fac_rev = demo_specs[spec_idx]
+
+            existing = cursor.execute(
+                "SELECT COUNT(*) FROM student_submissions WHERE student_id = ? AND title = ?",
+                (stu_id, title)
+            ).fetchone()[0]
+
+            if existing > 0:
+                continue
             cursor.execute("""
                 INSERT INTO student_submissions
                 (student_id, assignment_id, title, programming_language, source_filename, source_code, analysis_status, submitted_at)
